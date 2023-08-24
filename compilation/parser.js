@@ -26,15 +26,21 @@ function splitCodeIntoRawStatements(code) {
             if (shouldCleanString == true) {
                 textOfCurrentStatement = (0, characters_1.removeOuterSpacesFromString)(textOfCurrentStatement);
             }
+            if (textOfCurrentStatement == '') {
+                //do not add empty statements
+                clearStatement(false);
+                return;
+            }
             const newStatement = {
                 rawText: textOfCurrentStatement,
                 type: rawStatementType,
             };
             statements[indexOfCurrentStatement] = newStatement;
-            clearStatement();
+            clearStatement(true);
         }
-        function clearStatement() {
-            indexOfCurrentStatement++;
+        function clearStatement(shouldIncreaseIndex) {
+            if (shouldIncreaseIndex)
+                indexOfCurrentStatement++;
             textOfCurrentStatement = '';
         }
         if (character == '.' || character == ':') {
@@ -44,10 +50,22 @@ function splitCodeIntoRawStatements(code) {
                     break;
                 }
                 case ':': {
-                    rawStatementType = 'open';
+                    rawStatementType = 'opening';
                     break;
                 }
             }
+            closeStatement(true);
+        }
+        else if (character == ',') {
+            rawStatementType = 'continuous';
+            closeStatement(true);
+        }
+        else if (character == ';') {
+            rawStatementType = 'separating';
+            closeStatement(true);
+        }
+        else if (character == '=') {
+            rawStatementType = 'assignment-start';
             closeStatement(true);
         }
         else if (character == '"' || character == '\'') {
@@ -63,7 +81,7 @@ function splitCodeIntoRawStatements(code) {
             }
             isCurrentlyInString = !isCurrentlyInString;
             if (isCurrentlyInString == true) {
-                clearStatement();
+                clearStatement(false);
                 continue;
             }
             closeStatement(false);

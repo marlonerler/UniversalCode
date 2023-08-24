@@ -1,0 +1,1 @@
+export const ERR_NO_STATEMENT_TYPE = (characterIndex: number) => `Unknown error: could not determine type of statement (character at index ${characterIndex})`;

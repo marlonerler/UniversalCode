@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 
 // IMPORTS
-import { ParseResult, RawStatement, StatementTypes } from "../types/parser";
+import { ERR_NO_STATEMENT_TYPE } from "../constants/errors";
+import { ParseResult, Phrase, PhraseTypes } from "../types/parser";
 import { checkIfCharacterIsSpace, removeOuterSpacesFromString } from "../utility/characters";
 
 // MAIN
 export function parseUnicCode(code: string): ParseResult {
-    const rawStatements: RawStatement[] = splitCodeIntoRawStatements(code);
+    const rawStatements: Phrase[] = splitCodeIntoRawStatements(code);
     console.log(rawStatements);
 
     throw 'incomplete';
 }
 
-function splitCodeIntoRawStatements(code: string): RawStatement[] {
-    const statements: RawStatement[] = [];
+function splitCodeIntoRawStatements(code: string): Phrase[] {
+    const statements: Phrase[] = [];
     let indexOfCurrentStatement: number = 0;
     let textOfCurrentStatement: string = '';
     let isCurrentlyInString: boolean = false;
@@ -22,45 +23,37 @@ function splitCodeIntoRawStatements(code: string): RawStatement[] {
     for (let i: number = 0; i < code.length; i++) {
         let character: string = code[i];
 
-        let rawStatementType: StatementTypes;
+        let rawStatementType: PhraseTypes;
 
         function closeStatement(shouldCleanString: boolean): void {
             if (rawStatementType == undefined) {
-                throw `Unknown error: could not determine type of statement (character at index ${i})`;
+                throw ERR_NO_STATEMENT_TYPE(i);
             }
 
             if (shouldCleanString == true) {
                 textOfCurrentStatement = removeOuterSpacesFromString(textOfCurrentStatement);
             }
 
-            const newStatement: RawStatement = {
+            if (textOfCurrentStatement == '') {
+                //do not add empty statements
+                clearStatement(false);
+                return;
+            }
+
+            const newStatement: Phrase = {
                 rawText: textOfCurrentStatement,
                 type: rawStatementType,
             }
             statements[indexOfCurrentStatement] = newStatement;
 
-            clearStatement();
+            clearStatement(true);
         }
 
-        function clearStatement() {
-            indexOfCurrentStatement++;
+        function clearStatement(shouldIncreaseIndex: boolean) {
+            if (shouldIncreaseIndex) indexOfCurrentStatement++;
             textOfCurrentStatement = '';
         }
-
-        if (character == '.' || character == ':') {
-            switch (character) {
-                case '.': {
-                    rawStatementType = 'closed';
-                    break;
-                }
-                case ':': {
-                    rawStatementType = 'open';
-                    break;
-                }
-            }
-
-            closeStatement(true);
-        } else if (character == '"' || character == '\'') {
+        if (character == '"' || character == '\'') {
             switch (character) {
                 case '"': {
                     rawStatementType = 'string-safe';
@@ -74,14 +67,38 @@ function splitCodeIntoRawStatements(code: string): RawStatement[] {
 
             isCurrentlyInString = !isCurrentlyInString;
             if (isCurrentlyInString == true) {
-                clearStatement();
+                clearStatement(false);
                 continue;
             }
 
             closeStatement(false);
+        } else if (isCurrentlyInString == true) {
+            textOfCurrentStatement += character;
+        } else if (character == '.' || character == ':') {
+            switch (character) {
+                case '.': {
+                    rawStatementType = 'closed';
+                    break;
+                }
+                case ':': {
+                    rawStatementType = 'opening';
+                    break;
+                }
+            }
+
+            closeStatement(true);
+        } else if (character == ',') {
+            rawStatementType = 'continuous';
+            closeStatement(true);
+        } else if (character == ';') {
+            rawStatementType = 'separating';
+            closeStatement(true);
+        } else if (character == '=') {
+            rawStatementType = 'assignment-start';
+            closeStatement(true);
         } else {
-            if (character == '\n' && isCurrentlyInString == false) {
-                //do not preserve newlines outside strings
+            if (character == '\n') {
+                //do not preserve newlines
                 character = ' ';
             }
 
@@ -90,11 +107,9 @@ function splitCodeIntoRawStatements(code: string): RawStatement[] {
             const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
             const leadingCharacterIsSpace: boolean = leadingCharacter != undefined && checkIfCharacterIsSpace(leadingCharacter);
             const characterShouldBeIgnoredUnlessInString: boolean = characterIsSpace == true && leadingCharacterIsSpace == true;
-            const characterIsTextOfStatement: boolean = !characterShouldBeIgnoredUnlessInString || isCurrentlyInString;
 
-            if (characterIsTextOfStatement) {
-                textOfCurrentStatement += character;
-            }
+            if (characterShouldBeIgnoredUnlessInString) continue;
+            textOfCurrentStatement += character;
         }
     }
 

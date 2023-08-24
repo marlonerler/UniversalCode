@@ -8,8 +8,8 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
     let didRemoveAllLeadingSpaces: boolean = false;
     let didRemoveAllTrailingSpaces: boolean = false;
 
-    let indicesOfCharactersToRemove: number[] = [];
-    let cleanedString: string = '';
+    const indicesOfCharactersToRemove: Set<number> = new Set();
+    const cleanedStringCharacters: string[] = [];
 
     //collect indices of outer spaces
     for (let indexFromStart: number = 0; indexFromStart < stringToClean.length; indexFromStart++) {
@@ -22,7 +22,7 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
                 continue;
             };
 
-            indicesOfCharactersToRemove.push(indexFromStart);
+            indicesOfCharactersToRemove.add(indexFromStart);
         }
         if (didRemoveAllTrailingSpaces == false) {
             const currentTrailingCharacter: string = stringToClean[indexFromEnd];
@@ -31,16 +31,21 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
                 continue;
             };
 
-            indicesOfCharactersToRemove.push(indexFromEnd);
+            indicesOfCharactersToRemove.add(indexFromEnd);
+        }
+
+        if (didRemoveAllLeadingSpaces && didRemoveAllTrailingSpaces) {
+            break;
         }
     }
 
     // rebuild string without outer spaces
     for (let i = 0; i < stringToClean.length; i++) {
-        if (indicesOfCharactersToRemove.indexOf(i) > -1) continue;
+        if (indicesOfCharactersToRemove.has(i) == false) continue;
 
-        cleanedString += stringToClean[i];
+        cleanedStringCharacters.push(stringToClean[i]);
     }
 
+    const cleanedString = cleanedStringCharacters.join('');
     return cleanedString;
 }
