@@ -1,0 +1,19 @@
+{
+  "name": "universal-code",
+  "version": "1.0.0",
+  "description": "Minimal programming language that can compile to different target languages",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viridian035/UniversalCode.git"
+  },
+  "author": "a035",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/viridian035/UniversalCode/issues"
+  },
+  "homepage": "https://github.com/viridian035/UniversalCode#readme"
+}
