@@ -4,7 +4,7 @@
   "description": "Minimal programming language that can compile to different target languages",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc; node index.js tests/test-a.unic"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/viridian035/UniversalCode/issues"
   },
-  "homepage": "https://github.com/viridian035/UniversalCode#readme"
+  "homepage": "https://github.com/viridian035/UniversalCode#readme",
+  "devDependencies": {
+    "@types/node": "^20.5.1"
+  }
 }

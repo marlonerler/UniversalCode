@@ -1,0 +1,19 @@
+This is a closed statement. This is an open statement: 
+  This   statement    has    too many   spaces    .
+"This is a safe string" 'This is a normal string''another string'
+
+Statements
+can
+span 
+multiple
+lines.
+
+'   newlines
+in
+strings
+are
+preserved'
+
+'
+leading
+newline'
