@@ -1,29 +1,5 @@
-interface Person:
-    string name,
-    int age,
-end ifc;
+something = sdjgklsdjgkls;
 
-function main: returns void:
-    if true:
-    end if;
+array: 1, 2, 3;
 
-    if true:
-    elif true:
-    else:
-    end if;
-
-    while true:
-    end loop;
-
-    constant Person: john = undefined;
-    constant Person: jane = undefined;
-
-    function greetPersonByName: string name, returns string:
-        constant string: greeting = 'Hello, $name!';
-        return string;
-    end fn;
-
-    each people, take person:
-        constant string: greetingForPerson = greetPersonByName person.name;
-    end loop;
-end fn;
+something = sdjgklsdjgkls;

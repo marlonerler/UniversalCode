@@ -70,6 +70,15 @@ export type Unit =
           value: number;
       }
     | {
+          type: 'array-item';
+          value: string;
+      }
+      | {
+        type: 'object-property';
+        key: string;
+        value: string | undefined;
+    }
+    | {
           type: 'normal-string';
           content: string;
       }
@@ -185,6 +194,7 @@ export type Unit =
       };
 
 export type ScopeType =
+    | 'array-body'
     | 'case-body'
     | 'control-flow-body'
     | 'command-body'
@@ -192,6 +202,7 @@ export type ScopeType =
     | 'interface-body'
     | 'function-body'
     | 'loop-body'
+    | 'object-body'
     | 'switch-body';
 
 export const ScopesWithFunctionGrammar: ScopeType[] = [

@@ -54,6 +54,7 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeFalsyValues,
             recognizeIntegerOrFloat,
             recognizeString,
+            recognizeCompoundDataTypes,
 
             recognizeMultiwordPhraseUnit,
 
@@ -74,11 +75,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             if (couldClassifyPhrase == true) break;
         }
         if (couldClassifyPhrase == false) {
-            currentUnit = {
+            const fallbackUnit: Unit = {
                 type: 'unknown',
                 text: phraseCharacters.join(''),
             };
-            closeCurrentUnit();
+            processUnitWithValueForAssignment(fallbackUnit);
         }
     }
 
@@ -103,6 +104,82 @@ function checkIfScopeUsesFunctionGrammar(): boolean {
 
 function getCurrentScopeType(): ScopeType {
     return scopes[scopes.length - 1];
+}
+
+// generic
+function processAddingGenericUnit(): boolean {
+    if (currentUnit == undefined) return false;
+
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (currentUnit.type) {
+        case 'object-property': {
+            currentUnit.value = phraseText;
+            closeCurrentUnit();
+
+            if (phraseType == 'closing') {
+                scopes.pop();
+            }
+            return true;
+        }
+        case 'function-head': {
+            // function parameter
+            const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+            const parameter: Extract<Unit, { type: 'function-parameter' }> = {
+                type: 'function-parameter',
+                dataType: phraseParts.head.join(''),
+                name: phraseParts.body.join(''),
+            };
+            currentUnit.parameters.push(parameter);
+            return true;
+        }
+        case 'type-definition': {
+            currentUnit.typeReferences.push(phraseText);
+            if (phraseType == 'closing') {
+                closeCurrentUnit();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function processNewGenericUnit(): boolean {
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (getCurrentScopeType()) {
+        case 'array-body': {
+            currentUnit = {
+                type: 'array-item',
+                value: phraseText,
+            };
+            closeCurrentUnit();
+
+            if (phraseType == 'closing') {
+                scopes.pop();
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function processGenericUnitForCommand(): boolean {
+    if (currentUnit == undefined) return false;
+
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (currentUnit.type) {
+        case 'rename-command': {
+            currentUnit.oldName = phraseText;
+            closeCurrentUnit();
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // multiword
@@ -301,27 +378,13 @@ function processUnitWithValueForAssignment(draftedUnit: Unit): void {
         currentUnit == undefined ||
         (currentUnit.type != 'assignment' &&
             currentUnit.type != 'variable-declatarion')
-    )
-        return;
-
-    currentUnit.value = draftedUnit;
-    closeCurrentUnit();
-}
-
-function processGenericUnitForCommand(): boolean {
-    if (currentUnit == undefined) return false;
-
-    const phraseText: string = phraseCharacters.join('');
-
-    switch (currentUnit.type) {
-        case 'rename-command': {
-            currentUnit.oldName = phraseText;
-            closeCurrentUnit();
-            return true;
-        }
+    ) {
+        currentUnit = draftedUnit;
+    } else {
+        currentUnit.value = draftedUnit;
     }
 
-    return false;
+    closeCurrentUnit();
 }
 
 // assignments
@@ -359,6 +422,18 @@ function processAssignmentForCommandBody(): boolean {
     return true;
 }
 
+function processAssignmentForObjectBody(): boolean {
+    const phraseText: string = phraseCharacters.join('');
+
+    currentUnit = {
+        type: 'object-property',
+        key: phraseText,
+        value: undefined,
+    };
+
+    return true;
+}
+
 // recognition
 type phraseRecognitionFunction = () => boolean;
 
@@ -369,6 +444,8 @@ function recognizeAssignment(): boolean {
         return processAssignmentForFunctionBody();
     } else if (getCurrentScopeType() == 'command-body') {
         return processAssignmentForCommandBody();
+    } else if (getCurrentScopeType() == 'object-body') {
+        return processAssignmentForObjectBody();
     }
 
     return false;
@@ -437,6 +514,27 @@ function recognizeComment(): boolean {
     closeCurrentUnit();
 
     return true;
+}
+
+function recognizeCompoundDataTypes(): boolean {
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
+    if (phraseType != 'opening') return false;
+
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (phraseText) {
+        case 'array': {
+            scopes.push('array-body');
+            return true;
+        }
+        case 'object': {
+            scopes.push('object-body');
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
 }
 
 function recognizeEndMarkers(): boolean {
@@ -584,31 +682,9 @@ function recognizeVariableDeclaration(): boolean {
 function recognizeGenericUnit(): boolean {
     if (getCurrentScopeType() == 'command-body') {
         return processGenericUnitForCommand();
-    } else if (currentUnit == undefined) return false;
-
-    switch (currentUnit.type) {
-        case 'function-head': {
-            // function parameter
-            const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
-            const parameter: Extract<Unit, { type: 'function-parameter' }> = {
-                type: 'function-parameter',
-                dataType: phraseParts.head.join(''),
-                name: phraseParts.body.join(''),
-            };
-            currentUnit.parameters.push(parameter);
-            break;
-        }
-        case 'type-definition': {
-            currentUnit.typeReferences.push(phraseCharacters.join(''));
-            if (phraseType == 'closing') {
-                closeCurrentUnit();
-            }
-            break;
-        }
-        default: {
-            return false;
-        }
+    } else if (currentUnit == undefined) {
+        return processNewGenericUnit();
+    } else {
+        return processAddingGenericUnit();
     }
-
-    return true;
 }
