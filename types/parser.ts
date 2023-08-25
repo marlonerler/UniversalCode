@@ -21,6 +21,8 @@ export interface Import {
     sourceName: string;
 }
 
+export type LoopType = 'index' | 'item' | 'count';
+
 export interface Phrase {
     rawTextCharacters: string[];
     /** Determined by ending symbol (. or :). */
@@ -122,11 +124,10 @@ export type Unit =
           dataType: string;
           name: string;
       }
-      | {
-        type: 'return-statement';
-        value: string;
-    }
-
+    | {
+          type: 'return-statement';
+          value: string;
+      }
     | {
           type: 'if-head';
           condition: string;
@@ -138,18 +139,14 @@ export type Unit =
     | {
           type: 'else-head';
       }
-
     | {
-          type: 'for-head';
-          specification:
-              | 'object-of-iterable'
-              | 'index-in-iterable'
-              | 'count-until-number';
-          variableName: string;
-          iterationDenominator: string;
+          type: 'item-loop-head';
+          loopType: LoopType;
+          iterableName: string | undefined;
+          itemName: string | undefined;
       }
     | {
-          type: 'while-head';
+          type: 'while-loop-head';
           condition: string;
       }
     | {
@@ -164,7 +161,6 @@ export type Unit =
           type: 'case-head';
           cases: Extract<Unit, { type: 'case-definition' }>[];
       }
-
     | {
           type: 'interface-definition';
           name: string;
@@ -174,7 +170,6 @@ export type Unit =
           name: string;
           dataType: string;
       }
-      
     | {
           type: 'type-definition';
           name: string;
@@ -191,19 +186,17 @@ export type ScopeType =
     | 'command-body'
     | 'if-block-body'
     | 'interface-body'
-    | 'for-loop-body'
     | 'function-body'
-    | 'switch-body'
-    | 'while-loop-body';
+    | 'loop-body'
+    | 'switch-body';
 
 export const ScopesWithFunctionGrammar: ScopeType[] = [
     'case-body',
     'control-flow-body',
     'if-block-body',
-    'for-loop-body',
+    'loop-body',
     'function-body',
     'switch-body',
-    'while-loop-body',
 ];
 
 export interface Variable {

@@ -3,6 +3,7 @@
 import { ERROR_NO_PHRASE_RECOGNITION } from '../constants/errors';
 import {
     HeadAndBody,
+    LoopType,
     Phrase,
     PhraseType,
     ScopeType,
@@ -150,6 +151,40 @@ function processClosingMultiwordUnit(
     return true;
 }
 
+function processEnumeratingMultiwordUnit(
+    phraseParts: HeadAndBody,
+    headString: string,
+): boolean {
+    const bodyString = phraseParts.body.join('');
+
+    switch (headString) {
+        case 'count':
+        case 'each':
+        case 'until': {
+            let loopTypes: { [key: string]: LoopType } = {
+                count: 'index',
+                each: 'item',
+                until: 'count',
+            };
+            const loopType: LoopType | undefined = loopTypes[headString];
+            if (loopType == undefined) return false;
+
+            currentUnit = {
+                type: 'item-loop-head',
+                loopType,
+                iterableName: bodyString,
+                itemName: undefined,
+            };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function processOpeningMultiwordUnit(
     phraseParts: HeadAndBody,
     headString: string,
@@ -204,7 +239,18 @@ function processOpeningMultiwordUnit(
             scopes.push('function-body');
             break;
         }
+        case 'take': {
+            if (
+                currentUnit == undefined ||
+                currentUnit.type != 'item-loop-head'
+            )
+                return false;
 
+            currentUnit.itemName = bodyString;
+            closeCurrentUnit();
+            scopes.push('loop-body');
+            break;
+        }
         default: {
             return false;
         }
@@ -369,11 +415,10 @@ function recognizeEndMarkers(): boolean {
         case: 'case-body',
         cmd: 'command-body',
         fn: 'function-body',
-        for: 'for-loop-body',
+        loop: 'loop-body',
         if: 'if-block-body',
         ifc: 'interface-body',
         switch: 'switch-body',
-        while: 'while-loop-body',
     };
 
     const endingScope: ScopeType | undefined = endingScopes[bodyText];
@@ -454,6 +499,8 @@ function recognizeMultiwordPhraseUnit(): boolean {
         return processClosingMultiwordUnit(phraseParts, headString);
     } else if (phraseType == 'opening') {
         return processOpeningMultiwordUnit(phraseParts, headString);
+    } else if (phraseType == 'enumerating') {
+        return processEnumeratingMultiwordUnit(phraseParts, headString);
     }
 
     return false;
