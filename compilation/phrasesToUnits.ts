@@ -145,6 +145,19 @@ function recognizeBoolean(): boolean {
     return true;
 }
 
+function recognizeComment(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
+    if (phraseType != 'comment') return false;
+
+    currentUnit = {
+        type: 'comment',
+        content: phraseCharacters.join(''),
+    };
+    closeCurrentUnit();
+
+    return true;
+}
+
 function recognizeFalsyValues(): boolean {
     if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
@@ -188,19 +201,6 @@ function recognizeIntegerOrFloat(): boolean {
     return true;
 }
 
-function recognizeComment(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
-    if (phraseType != 'comment') return false;
-
-    currentUnit = {
-        type: 'comment',
-        content: phraseCharacters.join(''),
-    };
-    closeCurrentUnit();
-
-    return true;
-}
-
 function recognizeMultiwordPhraseUnit(): boolean {
     if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
@@ -216,26 +216,35 @@ function recognizeMultiwordPhraseUnit(): boolean {
     )
         return false;
 
-    if (headString == 'import') {
-        currentUnit = {
-            type: 'import',
-            sourceName: phraseParts.body.join(''),
-        };
-    } else if (headString == 'language') {
-        currentUnit = {
-            type: 'language-definition',
-            targetLanguage: phraseParts.body.join(''),
-        };
-    } else if (headString == 'module') {
-        currentUnit = {
-            type: 'module-name-definition',
-            moduleName: phraseParts.body.join(''),
-        };
-    } else if (headString == 'section') {
-        currentUnit = {
-            type: 'section-marker',
-            sectionName: phraseParts.body.join(''),
-        };
+    switch (headString) {
+        case 'import': {
+            currentUnit = {
+                type: 'import',
+                sourceName: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'language': {
+            currentUnit = {
+                type: 'language-definition',
+                targetLanguage: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'module': {
+            currentUnit = {
+                type: 'module-name-definition',
+                moduleName: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'section': {
+            currentUnit = {
+                type: 'section-marker',
+                sectionName: phraseParts.body.join(''),
+            };
+            break;
+        }
     }
 
     closeCurrentUnit();
