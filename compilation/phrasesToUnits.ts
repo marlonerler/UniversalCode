@@ -54,7 +54,7 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeIntegerOrFloat,
             recognizeString,
 
-            recognizeImportOrModuleNameDefinition,
+            recognizeMultiwordPhraseUnit,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
@@ -122,14 +122,14 @@ function recognizeFalsyValues(): boolean {
     return true;
 }
 
-function recognizeImportOrModuleNameDefinition(): boolean {
+function recognizeMultiwordPhraseUnit(): boolean {
     if (phraseType != 'closing') return false;
 
     const phraseParts: MultiwordPhraseParts =
         getPartsOfPMultiwordPhrase(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
-    if (headString != 'import' && headString != 'module') return false;
+    if (headString != 'import' && headString != 'module' && headString != 'section') return false;
 
     if (headString == 'module') {
         currentUnit = {
@@ -142,7 +142,7 @@ function recognizeImportOrModuleNameDefinition(): boolean {
             sourceName: phraseParts.body.join(''),
         };
     }
-    
+
     closeCurrentUnit();
 
     return true;

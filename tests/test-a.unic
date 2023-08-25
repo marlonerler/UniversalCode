@@ -2,9 +2,10 @@ module MyModule;
 
 import OtherModule;
 
+section Test;
 'normal string';
 "safe string";
-42; 42.123; 234Abc;
+42; 42.123; 234Abc!
 undefined; null; NaN;
 true; false;
 # this is a comment

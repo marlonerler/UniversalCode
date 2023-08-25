@@ -162,19 +162,12 @@ function recognizeSentence(): boolean {
 }
 
 function recognizeSentencePart(): boolean {
-    if (character == ',') {
-        phraseType = 'continuing';
-        closeCurrentPhrase(true);
+    if (character != ',') return false;
+    
+    phraseType = 'continuing';
+    closeCurrentPhrase(true);
 
-        return true;
-    } else if (character == ';') {
-        phraseType = 'separating';
-        closeCurrentPhrase(true);
-
-        return true;
-    } else {
-        return false;
-    }
+    return true;
 }
 
 function recognizeString(): boolean {

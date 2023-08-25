@@ -29,9 +29,8 @@ export interface Phrase {
 
 export type PhraseType =
     | 'closing'
-    | 'introducing'
-    | 'continuing'
-    | 'separating'
+    | 'opening'
+    | 'enumerating'
     | 'assignment-key'
     | 'normal-string'
     | 'safe-string'
