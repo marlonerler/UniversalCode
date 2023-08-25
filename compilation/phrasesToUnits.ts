@@ -74,7 +74,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             if (couldClassifyPhrase == true) break;
         }
         if (couldClassifyPhrase == false) {
-            throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
+            currentUnit = {
+                type: 'unknown',
+                text: phraseCharacters.join(''),
+            };
+            closeCurrentUnit();
         }
     }
 
@@ -245,7 +249,7 @@ function processOpeningMultiwordUnit(
             closeCurrentUnit();
             break;
         }
-        case 'returning': {
+        case 'returns': {
             if (currentUnit == undefined || currentUnit.type != 'function-head')
                 return false;
 
@@ -531,7 +535,11 @@ function recognizeMultiwordPhraseUnit(): boolean {
     } else if (phraseType == 'opening') {
         return processOpeningMultiwordUnit(phraseParts, headString, bodyString);
     } else if (phraseType == 'enumerating') {
-        return processEnumeratingMultiwordUnit(phraseParts, headString, bodyString);
+        return processEnumeratingMultiwordUnit(
+            phraseParts,
+            headString,
+            bodyString,
+        );
     }
 
     return false;

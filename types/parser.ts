@@ -45,6 +45,10 @@ export interface HeadAndBody {
 
 export type Unit =
     | {
+          type: 'unknown';
+          text: string;
+      }
+    | {
           type: 'boolean';
           value: 0 | 1;
       }
