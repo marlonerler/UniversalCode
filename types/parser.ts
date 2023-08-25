@@ -100,11 +100,6 @@ export type Unit =
         value: string;
     }
     | {
-        type: 'Assignment';
-        key: string;
-        value: string;
-    }
-    | {
         type: 'variable-declatation';
         isMutable: boolean;
         dataType: string;

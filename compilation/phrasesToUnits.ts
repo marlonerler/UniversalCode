@@ -129,7 +129,6 @@ function recognizeImport(): boolean {
         getPartsOfPMultiwordPhrase(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
-    console.log(phraseParts);
     if (headString != 'import') return false;
 
     currentUnit = {
@@ -146,7 +145,7 @@ function recognizeIntegerOrFloat(): boolean {
 
     const phraseText: string = phraseCharacters.join('');
     const parsedNumber: number = parseFloat(phraseText);
-    console.log(phraseText, parsedNumber);
+
     if (isNaN(parsedNumber) == true) return false;
 
     let unitType: 'float' | 'integer' = 'float';
