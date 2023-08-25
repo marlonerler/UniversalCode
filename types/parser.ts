@@ -113,7 +113,7 @@ export type Unit =
       }
     | {
           type: 'function-head';
-          returnType: string;
+          returnType: string | undefined;
           name: string;
           parameters: Extract<Unit, { type: 'function-parameter' }>[];
       }

@@ -1,3 +1,2 @@
-command:
-    rename: newName = oldName;
-end cmd;
+function greet:
+end fn;

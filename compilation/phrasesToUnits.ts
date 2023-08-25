@@ -325,8 +325,10 @@ function recognizeMultiwordPhraseUnit(): boolean {
 
     if (
         headString != 'import' &&
+        headString != 'function' &&
         headString != 'language' &&
         headString != 'module' &&
+        headString != 'returns' &&
         headString != 'section'
     )
         return false;
@@ -337,6 +339,16 @@ function recognizeMultiwordPhraseUnit(): boolean {
                 type: 'import',
                 sourceName: phraseParts.body.join(''),
             };
+            closeCurrentUnit();
+            break;
+        }
+        case 'function': {
+            currentUnit = {
+                type: 'function-head',
+                returnType: undefined,
+                name: phraseParts.body.join(''),
+                parameters: [],
+            };
             break;
         }
         case 'language': {
@@ -344,6 +356,7 @@ function recognizeMultiwordPhraseUnit(): boolean {
                 type: 'language-definition',
                 targetLanguage: phraseParts.body.join(''),
             };
+            closeCurrentUnit();
             break;
         }
         case 'module': {
@@ -351,6 +364,7 @@ function recognizeMultiwordPhraseUnit(): boolean {
                 type: 'module-name-definition',
                 moduleName: phraseParts.body.join(''),
             };
+            closeCurrentUnit();
             break;
         }
         case 'section': {
@@ -358,11 +372,11 @@ function recognizeMultiwordPhraseUnit(): boolean {
                 type: 'section-marker',
                 sectionName: phraseParts.body.join(''),
             };
+            closeCurrentUnit();
             break;
         }
     }
 
-    closeCurrentUnit();
     return true;
 }
 
