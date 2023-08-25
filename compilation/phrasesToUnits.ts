@@ -62,6 +62,8 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeCommandHead,
             recognizeCommands,
 
+            recognizeFunctionDefinition,
+
             recognizeEndMarkers,
             recognizeGenericUnit,
         ];
@@ -96,6 +98,82 @@ function checkIfScopeUsesFunctionGrammar(): boolean {
 
 function getCurrentScopeType(): ScopeType {
     return scopes[scopes.length - 1];
+}
+
+// multiword
+function processClosingMultiwordUnit(
+    phraseParts: HeadAndBody,
+    headString: string,
+): boolean {
+    switch (headString) {
+        case 'import': {
+            currentUnit = {
+                type: 'import',
+                sourceName: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'language': {
+            currentUnit = {
+                type: 'language-definition',
+                targetLanguage: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'module': {
+            currentUnit = {
+                type: 'module-name-definition',
+                moduleName: phraseParts.body.join(''),
+            };
+            break;
+        }
+        case 'section': {
+            currentUnit = {
+                type: 'section-marker',
+                sectionName: phraseParts.body.join(''),
+            };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    closeCurrentUnit();
+    return true;
+}
+
+function processOpeningMultiwordUnit(
+    phraseParts: HeadAndBody,
+    headString: string,
+): boolean {
+    const bodyString: string = phraseParts.body.join('');
+
+    switch (headString) {
+        case 'function': {
+            currentUnit = {
+                type: 'function-head',
+                returnType: undefined,
+                name: bodyString,
+                parameters: [],
+            };
+            break;
+        }
+        case 'returning': {
+            if (currentUnit == undefined || currentUnit.type != 'function-head')
+                return false;
+
+            currentUnit.returnType = bodyString;
+            closeCurrentUnit();
+            break;
+        }
+
+        default: {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // values
@@ -316,68 +394,31 @@ function recognizeIntegerOrFloat(): boolean {
     return true;
 }
 
-function recognizeMultiwordPhraseUnit(): boolean {
+function recognizeFunctionDefinition(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (phraseType != 'closing') return false;
+    if (phraseType != 'opening') return false;
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
-    if (
-        headString != 'import' &&
-        headString != 'function' &&
-        headString != 'language' &&
-        headString != 'module' &&
-        headString != 'returns' &&
-        headString != 'section'
-    )
-        return false;
-
-    switch (headString) {
-        case 'import': {
-            currentUnit = {
-                type: 'import',
-                sourceName: phraseParts.body.join(''),
-            };
-            closeCurrentUnit();
-            break;
-        }
-        case 'function': {
-            currentUnit = {
-                type: 'function-head',
-                returnType: undefined,
-                name: phraseParts.body.join(''),
-                parameters: [],
-            };
-            break;
-        }
-        case 'language': {
-            currentUnit = {
-                type: 'language-definition',
-                targetLanguage: phraseParts.body.join(''),
-            };
-            closeCurrentUnit();
-            break;
-        }
-        case 'module': {
-            currentUnit = {
-                type: 'module-name-definition',
-                moduleName: phraseParts.body.join(''),
-            };
-            closeCurrentUnit();
-            break;
-        }
-        case 'section': {
-            currentUnit = {
-                type: 'section-marker',
-                sectionName: phraseParts.body.join(''),
-            };
-            closeCurrentUnit();
-            break;
-        }
-    }
+    if (headString != 'function') return false;
 
     return true;
+}
+
+function recognizeMultiwordPhraseUnit(): boolean {
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
+
+    const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+    const headString: string = phraseParts.head.join('');
+
+    if (phraseType == 'closing') {
+        return processClosingMultiwordUnit(phraseParts, headString);
+    } else if (phraseType == 'opening') {
+        return processOpeningMultiwordUnit(phraseParts, headString);
+    }
+
+    return false;
 }
 
 function recognizeString(): boolean {
@@ -419,6 +460,19 @@ function recognizeVariableDeclaration(): boolean {
 function recognizeGenericUnit(): boolean {
     if (getCurrentScopeType() == 'command-body') {
         return processGenericUnitForCommand();
+    } else if (
+        currentUnit != undefined &&
+        currentUnit.type == 'function-head'
+    ) {
+        // function parameter
+        const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+        const parameter: Extract<Unit, { type: 'function-parameter' }> = {
+            type: 'function-parameter',
+            dataType: phraseParts.head.join(''),
+            name: phraseParts.body.join(''),
+        };
+        currentUnit.parameters.push(parameter);
+        return true;
     }
 
     return false;

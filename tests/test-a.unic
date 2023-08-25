@@ -1,2 +1,2 @@
-function greet:
+function greet: str name, int age, returning void:
 end fn;
