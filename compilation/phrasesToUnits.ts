@@ -57,6 +57,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
 
             recognizeVariableDeclaration,
             recognizeAssignment,
+
+            recognizeCommandHead,
+            recognizeCommands,
+
+            recognizeGenericUnit,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
@@ -87,29 +92,35 @@ function closeCurrentUnit(): void {
 }
 
 // values
-function processUnitWithValue(draftedUnit: Unit): void {
-    if (currentUnit == undefined) {
-        currentUnit = draftedUnit;
-        closeCurrentUnit();
-        return;
-    }
-
+function processUnitWithValueForAssignment(draftedUnit: Unit): void {
     if (
-        currentUnit.type == 'assignment' ||
-        currentUnit.type == 'variable-declatation'
-    ) {
-        currentUnit.value = draftedUnit;
-        closeCurrentUnit();
-    }
+        currentUnit == undefined ||
+        (currentUnit.type != 'assignment' &&
+            currentUnit.type != 'variable-declatation')
+    )
+        return;
+
+    currentUnit.value = draftedUnit;
+    closeCurrentUnit();
 }
 
-// recognition
-type phraseRecognitionFunction = () => boolean;
+function processGenericUnitForCommand(): boolean {
+    if (currentUnit == undefined) return false;
 
-function recognizeAssignment() {
-    if (getCurrentScopeType() != 'function-body') return false;
-    if (phraseType != 'assignment-key') return false;
+    const phraseText: string = phraseCharacters.join('');
 
+    switch (currentUnit.type) {
+        case 'rename-command': {
+            currentUnit.oldName = phraseText;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// assignments
+function processAssignmentForFunctionBody(): boolean {
     const phraseText: string = phraseCharacters.join('');
 
     if (
@@ -128,6 +139,36 @@ function recognizeAssignment() {
     return true;
 }
 
+function processAssignmentForCommandBody(): boolean {
+    if (currentUnit == undefined) return false;
+
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (currentUnit.type) {
+        case 'rename-command': {
+            currentUnit.newName = phraseText;
+            break;
+        }
+    }
+
+    return true;
+}
+
+// recognition
+type phraseRecognitionFunction = () => boolean;
+
+function recognizeAssignment(): boolean {
+    if (phraseType != 'assignment-key') return false;
+
+    if (getCurrentScopeType() == 'function-body') {
+        return processAssignmentForFunctionBody();
+    } else if (getCurrentScopeType() == 'command-body') {
+        return processAssignmentForCommandBody();
+    }
+
+    return false;
+}
+
 function recognizeBoolean(): boolean {
     if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
@@ -140,7 +181,42 @@ function recognizeBoolean(): boolean {
         type: 'boolean',
         value: booleanValue,
     };
-    processUnitWithValue(draftedUnit);
+    processUnitWithValueForAssignment(draftedUnit);
+
+    return true;
+}
+
+function recognizeCommandHead(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
+    if (phraseType != 'opening') return false;
+
+    const phraseText = phraseCharacters.join('');
+    if (phraseText != 'command') return false;
+
+    currentUnit = {
+        type: 'command-head',
+    };
+    closeCurrentUnit();
+
+    scopes.push('command-body');
+    return true;
+}
+
+function recognizeCommands(): boolean {
+    if (getCurrentScopeType() != 'command-body') return false;
+    if (phraseType != 'opening') return false;
+
+    const phraseText: string = phraseCharacters.join('');
+
+    switch (phraseText) {
+        case 'rename': {
+            currentUnit = {
+                type: 'rename-command',
+                oldName: undefined,
+                newName: undefined,
+            };
+        }
+    }
 
     return true;
 }
@@ -173,7 +249,7 @@ function recognizeFalsyValues(): boolean {
     const draftedUnit: Unit = {
         type: phraseText,
     };
-    processUnitWithValue(draftedUnit);
+    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
@@ -196,7 +272,7 @@ function recognizeIntegerOrFloat(): boolean {
         type: unitType,
         value: parsedNumber,
     };
-    processUnitWithValue(draftedUnit);
+    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
@@ -260,7 +336,7 @@ function recognizeString(): boolean {
         type: phraseType,
         content: phraseCharacters.join(''),
     };
-    processUnitWithValue(draftedUnit);
+    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
@@ -285,4 +361,12 @@ function recognizeVariableDeclaration(): boolean {
     };
 
     return true;
+}
+
+function recognizeGenericUnit(): boolean {
+    if (getCurrentScopeType() == 'command-body') {
+        return processGenericUnitForCommand();
+    }
+
+    return false;
 }

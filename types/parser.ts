@@ -182,6 +182,7 @@ export type Unit =
 export type ScopeType =
     | 'function-body'
     | 'control-flow-body'
+    | 'command-body'
     | 'switch-body'
     | 'case-body';
 
