@@ -62,6 +62,9 @@ export type Unit =
           type: 'NaN';
       }
     | {
+          type: 'void';
+      }
+    | {
           type: 'integer';
           value: number;
       }
@@ -70,14 +73,17 @@ export type Unit =
           value: number;
       }
     | {
-          type: 'array-item';
-          value: string;
+          type: 'array-start';
       }
-      | {
-        type: 'object-property';
-        key: string;
-        value: string | undefined;
-    }
+    | {
+          type: 'array-end';
+      }
+    | {
+          type: 'object-start';
+      }
+    | {
+          type: 'object-end';
+      }
     | {
           type: 'normal-string';
           content: string;
@@ -85,6 +91,11 @@ export type Unit =
     | {
           type: 'safe-string';
           content: string;
+      }
+    | {
+          type: 'two-word-cluster';
+          first: string;
+          second: string;
       }
     | {
           type: 'comment';
@@ -109,37 +120,29 @@ export type Unit =
     | {
           type: 'assignment';
           key: string;
-          value: Unit | undefined;
       }
     | {
           type: 'variable-declatarion';
           isMutable: boolean;
           dataType: string;
-          name: string;
-          value: Unit | undefined;
       }
     | {
           type: 'command-head';
       }
     | {
-          type: 'rename-command';
-          oldName: string | undefined;
-          newName: string | undefined;
+          type: 'command';
+          commandName: string;
       }
     | {
           type: 'function-head';
-          returnType: string | undefined;
           name: string;
-          parameters: Extract<Unit, { type: 'function-parameter' }>[];
       }
     | {
-          type: 'function-parameter';
-          dataType: string;
-          name: string;
+          type: 'function-return-type-annotation';
+          returnType: string;
       }
     | {
           type: 'return-statement';
-          value: string;
       }
     | {
           type: 'if-head';
@@ -155,16 +158,19 @@ export type Unit =
     | {
           type: 'item-loop-head';
           loopType: LoopType;
-          iterableName: string | undefined;
-          itemName: string | undefined;
+          iterableName: string;
       }
     | {
           type: 'while-loop-head';
           condition: string;
       }
     | {
-          type: 'switch-head';
+          type: 'loop-iterator-name-definition';
           value: string;
+      }
+    | {
+          type: 'switch-head';
+          variable: string;
       }
     | {
           type: 'case-definition';
@@ -172,16 +178,10 @@ export type Unit =
       }
     | {
           type: 'case-head';
-          cases: Extract<Unit, { type: 'case-definition' }>[];
       }
     | {
           type: 'interface-head';
           name: string;
-      }
-    | {
-          type: 'interface-property';
-          name: string;
-          dataType: string;
       }
     | {
           type: 'type-definition';

@@ -1,5 +1,27 @@
-something = sdjgklsdjgkls;
+command:
+    rename: greetPersonByName = greetPerson;
+end cmd;
 
-array: 1, 2, 3;
+myNumber = 123;
 
-something = sdjgklsdjgkls;
+interface Person:
+    string name,
+    int age,
+end ifc;
+
+constant Person: jane = object:
+    name = 'Jane',
+    age = 42;
+
+constant Person[]: people = array:
+    john, jane;
+
+function greetPerson: string name, returns string:
+    constant string: greetingString = 'Hello, $name!';
+    return: greetingString;
+end fn;
+
+each people, take person:
+    constant string: greetingString = [greetPerson person.name];
+    [console.log greetingString];
+end loop;

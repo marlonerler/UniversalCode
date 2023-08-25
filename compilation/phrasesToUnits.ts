@@ -15,8 +15,9 @@ import { getHeadAndBody, getValueOfBooleanString } from '../utility/parser';
 // DATA
 let units: Unit[];
 
-// current unit
+// units
 let currentUnit: Unit | undefined;
+let trailingUnit: Unit | undefined;
 
 // track scopes of code
 let scopes: ScopeType[];
@@ -31,9 +32,6 @@ let phraseCharacters: string[] = [];
 export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
     units = [];
 
-    // current unit
-    currentUnit = undefined;
-
     // first level is same grammar as function body
     scopes = ['function-body'];
 
@@ -42,6 +40,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
         indexOfCurrentPhrase < phrases.length;
         indexOfCurrentPhrase++
     ) {
+        // units
+        currentUnit = undefined;
+        trailingUnit = undefined;
+
+        // phrases
         phrase = phrases[indexOfCurrentPhrase];
         phraseType = phrase.type;
         phraseCharacters = phrase.rawTextCharacters;
@@ -67,7 +70,9 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeFunctionDefinition,
 
             recognizeEndMarkers,
-            recognizeGenericUnit,
+            recognizeTwoWordCluster,
+
+            catchOtherPhrases,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
@@ -75,11 +80,16 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             if (couldClassifyPhrase == true) break;
         }
         if (couldClassifyPhrase == false) {
-            const fallbackUnit: Unit = {
+            currentUnit = {
                 type: 'unknown',
                 text: phraseCharacters.join(''),
             };
-            processUnitWithValueForAssignment(fallbackUnit);
+        }
+        if (currentUnit != undefined) {
+            units.push(currentUnit);
+        }
+        if (trailingUnit != undefined) {
+            units.push(trailingUnit);
         }
     }
 
@@ -88,15 +98,6 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
 
 // HELPERS
 // general
-function closeCurrentUnit(): void {
-    if (currentUnit == undefined) {
-        throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
-    }
-
-    units.push(currentUnit);
-    currentUnit = undefined;
-}
-
 function checkIfScopeUsesFunctionGrammar(): boolean {
     const scope: ScopeType = getCurrentScopeType();
     return ScopesWithFunctionGrammar.indexOf(scope) > -1;
@@ -104,82 +105,6 @@ function checkIfScopeUsesFunctionGrammar(): boolean {
 
 function getCurrentScopeType(): ScopeType {
     return scopes[scopes.length - 1];
-}
-
-// generic
-function processAddingGenericUnit(): boolean {
-    if (currentUnit == undefined) return false;
-
-    const phraseText: string = phraseCharacters.join('');
-
-    switch (currentUnit.type) {
-        case 'object-property': {
-            currentUnit.value = phraseText;
-            closeCurrentUnit();
-
-            if (phraseType == 'closing') {
-                scopes.pop();
-            }
-            return true;
-        }
-        case 'function-head': {
-            // function parameter
-            const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
-            const parameter: Extract<Unit, { type: 'function-parameter' }> = {
-                type: 'function-parameter',
-                dataType: phraseParts.head.join(''),
-                name: phraseParts.body.join(''),
-            };
-            currentUnit.parameters.push(parameter);
-            return true;
-        }
-        case 'type-definition': {
-            currentUnit.typeReferences.push(phraseText);
-            if (phraseType == 'closing') {
-                closeCurrentUnit();
-            }
-            return true;
-        }
-    }
-
-    return false;
-}
-
-function processNewGenericUnit(): boolean {
-    const phraseText: string = phraseCharacters.join('');
-
-    switch (getCurrentScopeType()) {
-        case 'array-body': {
-            currentUnit = {
-                type: 'array-item',
-                value: phraseText,
-            };
-            closeCurrentUnit();
-
-            if (phraseType == 'closing') {
-                scopes.pop();
-            }
-            return true;
-        }
-    }
-
-    return false;
-}
-
-function processGenericUnitForCommand(): boolean {
-    if (currentUnit == undefined) return false;
-
-    const phraseText: string = phraseCharacters.join('');
-
-    switch (currentUnit.type) {
-        case 'rename-command': {
-            currentUnit.oldName = phraseText;
-            closeCurrentUnit();
-            return true;
-        }
-    }
-
-    return false;
 }
 
 // multiword
@@ -217,19 +142,11 @@ function processClosingMultiwordUnit(
             };
             break;
         }
-        case 'return': {
-            currentUnit = {
-                type: 'return-statement',
-                value: phraseParts.body.join(''),
-            };
-            break;
-        }
         default: {
             return false;
         }
     }
 
-    closeCurrentUnit();
     return true;
 }
 
@@ -254,19 +171,11 @@ function processEnumeratingMultiwordUnit(
                 type: 'item-loop-head',
                 loopType,
                 iterableName: bodyString,
-                itemName: undefined,
             };
             break;
         }
         default: {
-            if (getCurrentScopeType() != 'interface-body') return false;
-
-            currentUnit = {
-                type: 'interface-property',
-                name: bodyString,
-                dataType: headString,
-            };
-            closeCurrentUnit();
+            return false;
         }
     }
 
@@ -282,9 +191,7 @@ function processOpeningMultiwordUnit(
         case 'function': {
             currentUnit = {
                 type: 'function-head',
-                returnType: undefined,
                 name: bodyString,
-                parameters: [],
             };
             break;
         }
@@ -293,7 +200,7 @@ function processOpeningMultiwordUnit(
                 type: 'interface-head',
                 name: bodyString,
             };
-            closeCurrentUnit();
+
             scopes.push('interface-body');
             break;
         }
@@ -315,7 +222,7 @@ function processOpeningMultiwordUnit(
                 type,
                 condition: bodyString,
             };
-            closeCurrentUnit();
+
             scopes.push('if-block-body');
             break;
         }
@@ -323,27 +230,30 @@ function processOpeningMultiwordUnit(
             currentUnit = {
                 type: 'else-head',
             };
-            closeCurrentUnit();
+
+            break;
+        }
+        case 'return': {
+            currentUnit = {
+                type: 'return-statement',
+            };
             break;
         }
         case 'returns': {
-            if (currentUnit == undefined || currentUnit.type != 'function-head')
-                return false;
+            currentUnit = {
+                type: 'function-return-type-annotation',
+                returnType: bodyString,
+            };
 
-            currentUnit.returnType = bodyString;
-            closeCurrentUnit();
             scopes.push('function-body');
             break;
         }
         case 'take': {
-            if (
-                currentUnit == undefined ||
-                currentUnit.type != 'item-loop-head'
-            )
-                return false;
+            currentUnit = {
+                type: 'loop-iterator-name-definition',
+                value: bodyString,
+            };
 
-            currentUnit.itemName = bodyString;
-            closeCurrentUnit();
             scopes.push('loop-body');
             break;
         }
@@ -353,6 +263,7 @@ function processOpeningMultiwordUnit(
                 name: bodyString,
                 typeReferences: [],
             };
+
             break;
         }
         case 'while': {
@@ -360,7 +271,7 @@ function processOpeningMultiwordUnit(
                 type: 'while-loop-head',
                 condition: bodyString,
             };
-            closeCurrentUnit();
+
             scopes.push('loop-body');
             break;
         }
@@ -372,98 +283,33 @@ function processOpeningMultiwordUnit(
     return true;
 }
 
-// values
-function processUnitWithValueForAssignment(draftedUnit: Unit): void {
-    if (
-        currentUnit == undefined ||
-        (currentUnit.type != 'assignment' &&
-            currentUnit.type != 'variable-declatarion')
-    ) {
-        currentUnit = draftedUnit;
-    } else {
-        currentUnit.value = draftedUnit;
-    }
-
-    closeCurrentUnit();
-}
-
-// assignments
-function processAssignmentForFunctionBody(): boolean {
-    const phraseText: string = phraseCharacters.join('');
-
-    if (
-        currentUnit != undefined &&
-        currentUnit.type == 'variable-declatarion'
-    ) {
-        currentUnit.name = phraseText;
-    } else {
-        currentUnit = {
-            type: 'assignment',
-            key: phraseText,
-            value: undefined,
-        };
-    }
-
-    return true;
-}
-
-function processAssignmentForCommandBody(): boolean {
-    if (currentUnit == undefined) return false;
-
-    const phraseText: string = phraseCharacters.join('');
-
-    switch (currentUnit.type) {
-        case 'rename-command': {
-            currentUnit.newName = phraseText;
-            break;
-        }
-    }
-
-    return true;
-}
-
-function processAssignmentForObjectBody(): boolean {
-    const phraseText: string = phraseCharacters.join('');
-
-    currentUnit = {
-        type: 'object-property',
-        key: phraseText,
-        value: undefined,
-    };
-
-    return true;
-}
-
 // recognition
 type phraseRecognitionFunction = () => boolean;
 
 function recognizeAssignment(): boolean {
     if (phraseType != 'assignment-key') return false;
 
-    if (getCurrentScopeType() == 'function-body') {
-        return processAssignmentForFunctionBody();
-    } else if (getCurrentScopeType() == 'command-body') {
-        return processAssignmentForCommandBody();
-    } else if (getCurrentScopeType() == 'object-body') {
-        return processAssignmentForObjectBody();
-    }
+    const phraseText: string = phraseCharacters.join('');
 
-    return false;
+    currentUnit = {
+        type: 'assignment',
+        key: phraseText,
+    };
+
+    return true;
 }
 
 function recognizeBoolean(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
     if (phraseText != 'true' && phraseText != 'false') return false;
     const booleanValue: 0 | 1 = getValueOfBooleanString(phraseText);
 
-    let draftedUnit: Unit = {
+    currentUnit = {
         type: 'boolean',
         value: booleanValue,
     };
-    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
@@ -478,7 +324,6 @@ function recognizeCommandHead(): boolean {
     currentUnit = {
         type: 'command-head',
     };
-    closeCurrentUnit();
 
     scopes.push('command-body');
     return true;
@@ -490,15 +335,10 @@ function recognizeCommands(): boolean {
 
     const phraseText: string = phraseCharacters.join('');
 
-    switch (phraseText) {
-        case 'rename': {
-            currentUnit = {
-                type: 'rename-command',
-                oldName: undefined,
-                newName: undefined,
-            };
-        }
-    }
+    currentUnit = {
+        type: 'command',
+        commandName: phraseText,
+    };
 
     return true;
 }
@@ -511,23 +351,29 @@ function recognizeComment(): boolean {
         type: 'comment',
         content: phraseCharacters.join(''),
     };
-    closeCurrentUnit();
 
     return true;
 }
 
 function recognizeCompoundDataTypes(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'opening') return false;
 
     const phraseText: string = phraseCharacters.join('');
 
     switch (phraseText) {
         case 'array': {
+            currentUnit = {
+                type: 'array-start',
+            };
+
             scopes.push('array-body');
             return true;
         }
         case 'object': {
+            currentUnit = {
+                type: 'object-start',
+            };
+
             scopes.push('object-body');
             return true;
         }
@@ -562,34 +408,32 @@ function recognizeEndMarkers(): boolean {
         type: 'end-marker',
         endingScope,
     };
-    closeCurrentUnit();
+
     scopes.pop();
 
     return true;
 }
 
 function recognizeFalsyValues(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
     if (
         phraseText != 'undefined' &&
         phraseText != 'null' &&
-        phraseText != 'NaN'
+        phraseText != 'NaN' &&
+        phraseText != 'void'
     )
         return false;
 
-    const draftedUnit: Unit = {
+    currentUnit = {
         type: phraseText,
     };
-    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
 
 function recognizeIntegerOrFloat(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -602,11 +446,10 @@ function recognizeIntegerOrFloat(): boolean {
         unitType = 'integer';
     }
 
-    const draftedUnit: Unit = {
+    currentUnit = {
         type: unitType,
         value: parsedNumber,
     };
-    processUnitWithValueForAssignment(draftedUnit);
 
     return true;
 }
@@ -617,8 +460,14 @@ function recognizeFunctionDefinition(): boolean {
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
     const headString: string = phraseParts.head.join('');
+    const bodyString: string = phraseParts.body.join('');
 
     if (headString != 'function') return false;
+
+    currentUnit = {
+        type: 'function-head',
+        name: bodyString,
+    };
 
     return true;
 }
@@ -648,11 +497,32 @@ function recognizeString(): boolean {
     if (phraseType != 'safe-string' && phraseType != 'normal-string')
         return false;
 
-    const draftedUnit: Unit = {
+    currentUnit = {
         type: phraseType,
         content: phraseCharacters.join(''),
     };
-    processUnitWithValueForAssignment(draftedUnit);
+
+    return true;
+}
+
+function recognizeTwoWordCluster(): boolean {
+    const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+    if (phraseParts.body.length == 0) return false;
+
+    const headString: string = phraseParts.head.join('');
+
+    // body must contain no space
+    for (let i: number = 0; i < phraseParts.body.length; i++) {
+        if (phraseParts.body[i] == ' ') return false;
+    }
+
+    const bodyString = phraseParts.body.join('');
+
+    currentUnit = {
+        type: 'two-word-cluster',
+        first: headString,
+        second: bodyString,
+    };
 
     return true;
 }
@@ -672,19 +542,32 @@ function recognizeVariableDeclaration(): boolean {
         type: 'variable-declatarion',
         isMutable: headString == 'mutable',
         dataType,
-        name: '',
-        value: undefined,
     };
 
     return true;
 }
 
-function recognizeGenericUnit(): boolean {
-    if (getCurrentScopeType() == 'command-body') {
-        return processGenericUnitForCommand();
-    } else if (currentUnit == undefined) {
-        return processNewGenericUnit();
-    } else {
-        return processAddingGenericUnit();
+function catchOtherPhrases(): boolean {
+    if (phraseType == 'closing') {
+        switch (getCurrentScopeType()) {
+            case 'array-body': {
+                scopes.pop();
+
+                trailingUnit = {
+                    type: 'array-end',
+                };
+                break;
+            }
+            case 'object-body': {
+                scopes.pop();
+
+                trailingUnit = {
+                    type: 'object-end',
+                };
+                break;
+            }
+        }
     }
+
+    return false;
 }
