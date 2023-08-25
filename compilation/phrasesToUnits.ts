@@ -27,7 +27,6 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
 
     for (let i: number = 0; i < phrases.length; i++) {
         const phrase: Phrase = phrases[i];
-        console.log(phrase);
         const type: PhraseType = phrase.type;
         const rawTextCharacters: string[] = phrase.rawTextCharacters;
 
@@ -58,6 +57,9 @@ function closeCurrentUnit(indexOfCurrentPhrase: number): void {
     if (currentUnit == undefined) {
         throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
     }
+
+    units.push(currentUnit);
+    currentUnit = undefined;
 }
 
 // recognition

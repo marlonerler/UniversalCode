@@ -84,6 +84,7 @@ function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: 
 }
 
 function resetCurrentPhrase(): void {
+    phraseType = undefined;
     charactersOfCurrentPhrase = [];
 }
 

@@ -1,7 +1,1 @@
-language sh.
-
 # this is a comment
-import SomeModule.
-module SomeOtherModule.
-
-Main section.
