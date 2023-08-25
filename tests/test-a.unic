@@ -1,4 +1,4 @@
-function greet: str name, int age, returning str:
-    constant str: greetingString = 'Hello, $name!';
-    return greetingString;
-end fn;
+if a and b:
+elif c and d:
+else:
+end if;

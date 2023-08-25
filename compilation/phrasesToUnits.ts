@@ -166,12 +166,42 @@ function processOpeningMultiwordUnit(
             };
             break;
         }
+        case 'if':
+        case 'elif': {
+            let type: 'if-head' | 'elif-head' | undefined = undefined;
+            if (headString == 'if') {
+                type = 'if-head';
+            } else if (headString == 'elif') {
+                type = 'elif-head';
+
+                //elif closes previous if scope
+                scopes.pop();
+            }
+
+            if (type == undefined) return false;
+
+            currentUnit = {
+                type,
+                condition: bodyString,
+            };
+            closeCurrentUnit();
+            scopes.push('if-block-body');
+            break;
+        }
+        case 'else': {
+            currentUnit = {
+                type: 'else-head',
+            };
+            closeCurrentUnit();
+            break;
+        }
         case 'returning': {
             if (currentUnit == undefined || currentUnit.type != 'function-head')
                 return false;
 
             currentUnit.returnType = bodyString;
             closeCurrentUnit();
+            scopes.push('function-body');
             break;
         }
 
@@ -354,6 +384,7 @@ function recognizeEndMarkers(): boolean {
         endingScope,
     };
     closeCurrentUnit();
+    scopes.pop();
 
     return true;
 }

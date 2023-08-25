@@ -138,6 +138,7 @@ export type Unit =
     | {
           type: 'else-head';
       }
+
     | {
           type: 'for-head';
           specification:
@@ -163,6 +164,7 @@ export type Unit =
           type: 'case-head';
           cases: Extract<Unit, { type: 'case-definition' }>[];
       }
+
     | {
           type: 'interface-definition';
           name: string;
@@ -172,6 +174,7 @@ export type Unit =
           name: string;
           dataType: string;
       }
+      
     | {
           type: 'type-definition';
           name: string;
