@@ -1,4 +1,6 @@
-import something;
+module MyModule;
+
+import OtherModule;
 
 'normal string';
 "safe string";
