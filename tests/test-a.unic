@@ -1,2 +1,4 @@
-function greet: str name, int age, returning void:
+function greet: str name, int age, returning str:
+    constant str: greetingString = 'Hello, $name!';
+    return greetingString;
 end fn;

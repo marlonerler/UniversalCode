@@ -122,6 +122,11 @@ export type Unit =
           dataType: string;
           name: string;
       }
+      | {
+        type: 'return-statement';
+        value: string;
+    }
+
     | {
           type: 'if-head';
           condition: string;

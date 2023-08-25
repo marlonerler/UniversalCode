@@ -134,6 +134,13 @@ function processClosingMultiwordUnit(
             };
             break;
         }
+        case 'return': {
+            currentUnit = {
+                type: 'return-statement',
+                value: phraseParts.body.join(''),
+            };
+            break;
+        }
         default: {
             return false;
         }
