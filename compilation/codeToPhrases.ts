@@ -1,7 +1,13 @@
 #!/usr/bin/env node
-import { ERROR_NO_PHRASE_RECOGNITION, ERROR_NO_PHRASE_TYPE } from "../constants/errors";
-import { Phrase, PhraseType } from "../types/parser";
-import { checkIfCharacterIsSpace, removeOuterSpacesFromCharacterArray } from "../utility/characters";
+import {
+    ERROR_NO_PHRASE_RECOGNITION,
+    ERROR_NO_PHRASE_TYPE,
+} from '../constants/errors';
+import { Phrase, PhraseType } from '../types/parser';
+import {
+    checkIfCharacterIsSpace,
+    removeOuterSpacesFromCharacterArray,
+} from '../utility/characters';
 
 // DATA
 let phrases: Phrase[];
@@ -14,6 +20,11 @@ let phraseType: PhraseType | undefined;
 let markerOfCurrentString: string | undefined;
 let isCurrentlyInsideComment: boolean;
 let isEscaping: boolean;
+
+// tracking loop
+let indexOfCurrentCharacter: number = 0;
+let character: string = '';
+let leadingCharacter: string | undefined;
 
 // MAIN
 export function getPhrasesFromCode(code: string): Phrase[] {
@@ -29,9 +40,13 @@ export function getPhrasesFromCode(code: string): Phrase[] {
     isEscaping = false;
 
     // loop over every character
-    for (let i: number = 0; i < code.length; i++) {
-        let character: string = code[i];
-        const leadingCharacter: string | undefined = code[i - 1];
+    for (
+        indexOfCurrentCharacter = 0;
+        indexOfCurrentCharacter < code.length;
+        indexOfCurrentCharacter++
+    ) {
+        character = code[indexOfCurrentCharacter];
+        leadingCharacter = code[indexOfCurrentCharacter - 1];
 
         let couldClassifyCharacter: boolean = false;
         const parseProcedure: characterRecognitionFunction[] = [
@@ -41,17 +56,18 @@ export function getPhrasesFromCode(code: string): Phrase[] {
             recognizeSentencePart,
             recognizeAssignment,
             recognizeOther,
-        ]
+        ];
         for (let j = 0; j < parseProcedure.length; j++) {
-            const functionToRun: characterRecognitionFunction = parseProcedure[j];
-            couldClassifyCharacter = functionToRun(i, character, leadingCharacter);
+            const functionToRun: characterRecognitionFunction =
+                parseProcedure[j];
+            couldClassifyCharacter = functionToRun();
             if (couldClassifyCharacter == true) break;
         }
         if (couldClassifyCharacter == false) {
-            throw ERROR_NO_PHRASE_RECOGNITION(i);
+            throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentCharacter);
         }
 
-        isEscaping = (character == '\\' && leadingCharacter != '\\');
+        isEscaping = character == '\\' && leadingCharacter != '\\';
     }
 
     return phrases;
@@ -59,7 +75,9 @@ export function getPhrasesFromCode(code: string): Phrase[] {
 
 // HELPERS
 // general
-function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: boolean): void {
+function closeCurrentPhrase(
+    shouldCleanString: boolean,
+): void {
     if (phraseType == undefined) {
         throw ERROR_NO_PHRASE_TYPE(indexOfCurrentCharacter);
     }
@@ -71,13 +89,15 @@ function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: 
     }
 
     if (shouldCleanString == true) {
-        charactersOfCurrentPhrase = removeOuterSpacesFromCharacterArray(charactersOfCurrentPhrase);
+        charactersOfCurrentPhrase = removeOuterSpacesFromCharacterArray(
+            charactersOfCurrentPhrase,
+        );
     }
 
     const newPhrase: Phrase = {
         rawTextCharacters: charactersOfCurrentPhrase,
         type: phraseType,
-    }
+    };
     phrases.push(newPhrase);
 
     resetCurrentPhrase();
@@ -89,23 +109,23 @@ function resetCurrentPhrase(): void {
 }
 
 // recognition
-type characterRecognitionFunction = (indexOfCurrentCharacter: number, character: string, leadingCharacter: string) => boolean;
+type characterRecognitionFunction = () => boolean;
 
-function recognizeAssignment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeAssignment(): boolean {
     if (character != '=') return false;
 
     phraseType = 'assignment-key';
-    closeCurrentPhrase(indexOfCurrentCharacter, true);
+    closeCurrentPhrase(true);
 
     return true;
 }
 
-function recognizeComment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeComment(): boolean {
     if (isCurrentlyInsideComment == true) {
         if (character == '\n') {
             phraseType = 'comment';
             isCurrentlyInsideComment = false;
-            closeCurrentPhrase(indexOfCurrentCharacter, false);
+            closeCurrentPhrase(false);
         } else {
             charactersOfCurrentPhrase.push(character);
         }
@@ -122,7 +142,7 @@ function recognizeComment(indexOfCurrentCharacter: number, character: string, le
     }
 }
 
-function recognizeSentence(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeSentence(): boolean {
     if (character != ';' && character != ':') return false;
 
     switch (character) {
@@ -136,20 +156,20 @@ function recognizeSentence(indexOfCurrentCharacter: number, character: string, l
         }
     }
 
-    closeCurrentPhrase(indexOfCurrentCharacter, true);
+    closeCurrentPhrase(true);
 
     return true;
 }
 
-function recognizeSentencePart(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeSentencePart(): boolean {
     if (character == ',') {
         phraseType = 'continuing';
-        closeCurrentPhrase(indexOfCurrentCharacter, true);
+        closeCurrentPhrase(true);
 
         return true;
     } else if (character == ';') {
         phraseType = 'separating';
-        closeCurrentPhrase(indexOfCurrentCharacter, true);
+        closeCurrentPhrase(true);
 
         return true;
     } else {
@@ -157,8 +177,8 @@ function recognizeSentencePart(indexOfCurrentCharacter: number, character: strin
     }
 }
 
-function recognizeString(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
-    if ((character != '"' && character != '\'') || isEscaping == true) {
+function recognizeString(): boolean {
+    if ((character != '"' && character != "'") || isEscaping == true) {
         // character is not string marker
 
         // add character if inside string
@@ -168,14 +188,14 @@ function recognizeString(indexOfCurrentCharacter: number, character: string, lea
         } else {
             return false;
         }
-    };
+    }
 
     switch (character) {
         case '"': {
             phraseType = 'safe-string';
             break;
         }
-        case '\'': {
+        case "'": {
             phraseType = 'normal-string';
             break;
         }
@@ -187,7 +207,7 @@ function recognizeString(indexOfCurrentCharacter: number, character: string, lea
         resetCurrentPhrase();
     } else if (markerOfCurrentString == character) {
         markerOfCurrentString = undefined;
-        closeCurrentPhrase(indexOfCurrentCharacter, false);
+        closeCurrentPhrase(false);
     } else {
         //string marker for diffent string type, treat as string content
         charactersOfCurrentPhrase.push(character);
@@ -196,7 +216,7 @@ function recognizeString(indexOfCurrentCharacter: number, character: string, lea
     return true;
 }
 
-function recognizeOther(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeOther(): boolean {
     if (character == '\n') {
         //do not preserve newlines
         character = ' ';
@@ -204,8 +224,11 @@ function recognizeOther(indexOfCurrentCharacter: number, character: string, lead
 
     // check if character should be added to phrase text
     const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
-    const leadingCharacterIsSpace: boolean = leadingCharacter != undefined && checkIfCharacterIsSpace(leadingCharacter);
-    const characterShouldBeIgnored: boolean = characterIsSpace == true && leadingCharacterIsSpace == true;
+    const leadingCharacterIsSpace: boolean =
+        leadingCharacter != undefined &&
+        checkIfCharacterIsSpace(leadingCharacter);
+    const characterShouldBeIgnored: boolean =
+        characterIsSpace == true && leadingCharacterIsSpace == true;
 
     if (characterShouldBeIgnored) return true;
     charactersOfCurrentPhrase.push(character);

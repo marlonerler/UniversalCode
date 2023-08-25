@@ -1,8 +1,17 @@
 #!/usr/bin/env node
 
 import { ERROR_NO_PHRASE_RECOGNITION } from '../constants/errors';
-import { MultiwordPhraseParts, Phrase, PhraseType, ScopeType, Unit } from '../types/parser';
-import { getPartsOfPMultiwordPhrase, getValueOfBooleanString } from '../utility/parser';
+import {
+    MultiwordPhraseParts,
+    Phrase,
+    PhraseType,
+    ScopeType,
+    Unit,
+} from '../types/parser';
+import {
+    getPartsOfPMultiwordPhrase,
+    getValueOfBooleanString,
+} from '../utility/parser';
 
 // DATA
 let units: Unit[];
@@ -13,6 +22,12 @@ let currentUnit: Unit | undefined;
 
 // track scopes of code
 let scopes: ScopeType[];
+
+// track loop
+let indexOfCurrentPhrase: number = 0;
+let phrase: Phrase | undefined;
+let phraseType: PhraseType | undefined;
+let phraseCharacters: string[] = [];
 
 // MAIN
 export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
@@ -25,10 +40,10 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
     // first level is same grammar as function body
     scopes = ['function-body'];
 
-    for (let i: number = 0; i < phrases.length; i++) {
-        const phrase: Phrase = phrases[i];
-        const type: PhraseType = phrase.type;
-        const rawTextCharacters: string[] = phrase.rawTextCharacters;
+    for (indexOfCurrentPhrase = 0; indexOfCurrentPhrase < phrases.length; indexOfCurrentPhrase++) {
+        phrase = phrases[indexOfCurrentPhrase];
+        phraseType = phrase.type;
+        phraseCharacters = phrase.rawTextCharacters;
 
         let couldClassifyPhrase: boolean = false;
         const parseProcedure: phraseRecognitionFunction[] = [
@@ -43,11 +58,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
-            couldClassifyPhrase = functionToRun(i, type, rawTextCharacters);
+            couldClassifyPhrase = functionToRun();
             if (couldClassifyPhrase == true) break;
         }
         if (couldClassifyPhrase == false) {
-            throw ERROR_NO_PHRASE_RECOGNITION(i);
+            throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
         }
     }
 
@@ -60,7 +75,7 @@ function getCurrentScopeType(): ScopeType {
     return scopes[scopes.length - 1];
 }
 
-function closeCurrentUnit(indexOfCurrentPhrase: number): void {
+function closeCurrentUnit(): void {
     if (currentUnit == undefined) {
         throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
     }
@@ -70,20 +85,12 @@ function closeCurrentUnit(indexOfCurrentPhrase: number): void {
 }
 
 // recognition
-type phraseRecognitionFunction = (
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-) => boolean;
+type phraseRecognitionFunction = () => boolean;
 
-function recognizeBoolean(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeBoolean(): boolean {
     if (phraseType != 'closing') return false;
 
-    const phraseText: string = characters.join('');
+    const phraseText: string = phraseCharacters.join('');
     if (phraseText != 'true' && phraseText != 'false') return false;
     const booleanValue: 0 | 1 = getValueOfBooleanString(phraseText);
 
@@ -91,19 +98,15 @@ function recognizeBoolean(
         type: 'boolean',
         value: booleanValue,
     };
-    closeCurrentUnit(indexOfCurrentPhrase);
+    closeCurrentUnit();
 
     return true;
 }
 
-function recognizeFalsyValues(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeFalsyValues(): boolean {
     if (phraseType != 'closing') return false;
 
-    const phraseText: string = characters.join('');
+    const phraseText: string = phraseCharacters.join('');
     if (
         phraseText != 'undefined' &&
         phraseText != 'null' &&
@@ -114,19 +117,16 @@ function recognizeFalsyValues(
     currentUnit = {
         type: phraseText,
     };
-    closeCurrentUnit(indexOfCurrentPhrase);
+    closeCurrentUnit();
 
     return true;
 }
 
-function recognizeImport(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeImport(): boolean {
     if (phraseType != 'closing') return false;
 
-    const phraseParts: MultiwordPhraseParts = getPartsOfPMultiwordPhrase(characters);
+    const phraseParts: MultiwordPhraseParts =
+        getPartsOfPMultiwordPhrase(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
     console.log(phraseParts);
@@ -135,20 +135,16 @@ function recognizeImport(
     currentUnit = {
         type: 'import',
         sourceName: phraseParts.body.join(''),
-    }
-    closeCurrentUnit(indexOfCurrentPhrase);
+    };
+    closeCurrentUnit();
 
     return true;
 }
 
-function recognizeIntegerOrFloat(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeIntegerOrFloat(): boolean {
     if (phraseType != 'closing') return false;
 
-    const phraseText: string = characters.join('');
+    const phraseText: string = phraseCharacters.join('');
     const parsedNumber: number = parseFloat(phraseText);
     console.log(phraseText, parsedNumber);
     if (isNaN(parsedNumber) == true) return false;
@@ -162,40 +158,32 @@ function recognizeIntegerOrFloat(
         type: unitType,
         value: parsedNumber,
     };
-    closeCurrentUnit(indexOfCurrentPhrase);
+    closeCurrentUnit();
 
     return true;
 }
 
-function recognizeComment(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeComment(): boolean {
     if (phraseType != 'comment') return false;
 
     currentUnit = {
         type: 'comment',
-        content: characters.join(''),
+        content: phraseCharacters.join(''),
     };
-    closeCurrentUnit(indexOfCurrentPhrase);
+    closeCurrentUnit();
 
     return true;
 }
 
-function recognizeString(
-    indexOfCurrentPhrase: number,
-    phraseType: PhraseType,
-    characters: string[],
-): boolean {
+function recognizeString(): boolean {
     if (phraseType != 'safe-string' && phraseType != 'normal-string')
         return false;
 
     currentUnit = {
         type: phraseType,
-        content: characters.join(''),
+        content: phraseCharacters.join(''),
     };
-    closeCurrentUnit(indexOfCurrentPhrase);
+    closeCurrentUnit();
 
     return true;
 }
