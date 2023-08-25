@@ -151,7 +151,7 @@ function recognizeSentence(): boolean {
             break;
         }
         case ':': {
-            phraseType = 'introducing';
+            phraseType = 'opening';
             break;
         }
     }
@@ -164,7 +164,7 @@ function recognizeSentence(): boolean {
 function recognizeSentencePart(): boolean {
     if (character != ',') return false;
     
-    phraseType = 'continuing';
+    phraseType = 'enumerating';
     closeCurrentPhrase(true);
 
     return true;
