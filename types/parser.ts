@@ -36,149 +36,144 @@ export type PhraseType =
     | 'safe-string'
     | 'comment';
 
-export interface MultiwordPhraseParts {
+export interface HeadAndBody {
     head: string[];
     body: string[];
 }
 
 export type Unit =
     | {
-        type: 'boolean';
-        value: 0 | 1;
-    }
+          type: 'boolean';
+          value: 0 | 1;
+      }
     | {
-        type: 'undefined';
-    }
+          type: 'undefined';
+      }
     | {
-        type: 'null';
-    }
+          type: 'null';
+      }
     | {
-        type: 'NaN';
-    }
+          type: 'NaN';
+      }
     | {
-        type: 'integer';
-        value: number;
-    }
+          type: 'integer';
+          value: number;
+      }
     | {
-        type: 'float';
-        value: number;
-    }
-
+          type: 'float';
+          value: number;
+      }
     | {
-        type: 'normal-string';
-        content: string;
-    }
+          type: 'normal-string';
+          content: string;
+      }
     | {
-        type: 'safe-string';
-        content: string;
-    }
-
+          type: 'safe-string';
+          content: string;
+      }
     | {
-        type: 'comment';
-        content: string;
-    }
+          type: 'comment';
+          content: string;
+      }
     | {
-        type: 'import';
-        sourceName: string;
-    }
+          type: 'import';
+          sourceName: string;
+      }
     | {
-        type: 'module-name-definition';
-        moduleName: string;
-    }
+          type: 'module-name-definition';
+          moduleName: string;
+      }
     | {
-        type: 'section-marker';
-        sectionName: string;
-    }
+          type: 'section-marker';
+          sectionName: string;
+      }
     | {
-        type: 'language-definition';
-        targetLanguage: string;
-    }
+          type: 'language-definition';
+          targetLanguage: string;
+      }
     | {
-        type: 'assignment';
-        key: string;
-        value: string;
-    }
+          type: 'assignment';
+          key: string;
+          value: Unit | undefined;
+      }
     | {
-        type: 'variable-declatation';
-        isMutable: boolean;
-        dataType: string;
-        name: string;
-        value: Unit;
-    }
+          type: 'variable-declatation';
+          isMutable: boolean;
+          dataType: string;
+          name: string;
+          value: Unit | undefined;
+      }
     | {
-        type: 'command-head';
-    }
+          type: 'command-head';
+      }
     | {
-        type: 'function-head';
-        returnType: string;
-        name: string;
-        parameters: Extract<Unit, { type: 'function-parameter' }>[];
-    }
+          type: 'function-head';
+          returnType: string;
+          name: string;
+          parameters: Extract<Unit, { type: 'function-parameter' }>[];
+      }
     | {
-        type: 'function-parameter';
-        dataType: string;
-        name: string;
-    }
+          type: 'function-parameter';
+          dataType: string;
+          name: string;
+      }
     | {
-        type: 'if-head';
-        condition: string;
-    }
+          type: 'if-head';
+          condition: string;
+      }
     | {
-        type: 'elif-head';
-        condition: string;
-    }
+          type: 'elif-head';
+          condition: string;
+      }
     | {
-        type: 'else-head';
-    }
+          type: 'else-head';
+      }
     | {
-        type: 'for-head';
-        specification: 'object-of-iterable' | 'index-in-iterable' | 'count-until-number';
-        variableName: string;
-        iterationDenominator: string;
-    }
+          type: 'for-head';
+          specification:
+              | 'object-of-iterable'
+              | 'index-in-iterable'
+              | 'count-until-number';
+          variableName: string;
+          iterationDenominator: string;
+      }
     | {
-        type: 'while-head';
-        condition: string;
-    }
-
+          type: 'while-head';
+          condition: string;
+      }
     | {
-        type: 'switch-head';
-        value: string;
-    }
+          type: 'switch-head';
+          value: string;
+      }
     | {
-        type: 'case-definition';
-        referenceValue: string;
-    }
+          type: 'case-definition';
+          referenceValue: string;
+      }
     | {
-        type: 'case-head';
-        cases: Extract<Unit, { type: 'case-definition' }>[];
-    }
-
+          type: 'case-head';
+          cases: Extract<Unit, { type: 'case-definition' }>[];
+      }
     | {
-        type: 'interface-definition';
-        name: string;
-    }
+          type: 'interface-definition';
+          name: string;
+      }
     | {
-        type: 'interface-item';
-        name: string;
-        dataType: string;
-    }
+          type: 'interface-item';
+          name: string;
+          dataType: string;
+      }
     | {
-        type: 'type-definition';
-        name: string;
-        typeReferences: string[];
-    }
-
+          type: 'type-definition';
+          name: string;
+          typeReferences: string[];
+      }
     | {
-        type: 'end-marker';
-        endingScope: ScopeType;
-    };
+          type: 'end-marker';
+          endingScope: ScopeType;
+      };
 
 export type ScopeType =
-    | 'function-parameter-list'
-    | 'function-return-type-definition'
     | 'function-body'
-    | 'variable-declaration'
     | 'control-flow-body'
     | 'switch-body'
     | 'case-body';

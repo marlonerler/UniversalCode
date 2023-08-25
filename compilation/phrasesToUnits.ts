@@ -2,22 +2,18 @@
 
 import { ERROR_NO_PHRASE_RECOGNITION } from '../constants/errors';
 import {
-    MultiwordPhraseParts,
+    HeadAndBody,
     Phrase,
     PhraseType,
     ScopeType,
     Unit,
 } from '../types/parser';
-import {
-    getPartsOfPMultiwordPhrase,
-    getValueOfBooleanString,
-} from '../utility/parser';
+import { getHeadAndBody, getValueOfBooleanString } from '../utility/parser';
 
 // DATA
 let units: Unit[];
 
 // current unit
-let indexOfCurrentUnit: number;
 let currentUnit: Unit | undefined;
 
 // track scopes of code
@@ -34,7 +30,6 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
     units = [];
 
     // current unit
-    indexOfCurrentUnit = 0;
     currentUnit = undefined;
 
     // first level is same grammar as function body
@@ -59,6 +54,9 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeString,
 
             recognizeMultiwordPhraseUnit,
+
+            recognizeVariableDeclaration,
+            recognizeAssignment,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
@@ -88,8 +86,45 @@ function closeCurrentUnit(): void {
     currentUnit = undefined;
 }
 
+// values
+function processUnitWithValue(draftedUnit: Unit): void {
+    if (currentUnit == undefined) {
+        currentUnit = draftedUnit;
+        closeCurrentUnit();
+        return;
+    }
+
+    if (
+        currentUnit.type == 'assignment' ||
+        currentUnit.type == 'variable-declatation'
+    ) {
+        currentUnit.value = draftedUnit;
+        closeCurrentUnit();
+    }
+}
+
 // recognition
 type phraseRecognitionFunction = () => boolean;
+
+function recognizeAssignment() {
+    if (phraseType != 'assignment-key') return false;
+    const phraseText: string = phraseCharacters.join('');
+
+    if (
+        currentUnit != undefined &&
+        currentUnit.type == 'variable-declatation'
+    ) {
+        currentUnit.name = phraseText;
+    } else {
+        currentUnit = {
+            type: 'assignment',
+            key: phraseText,
+            value: undefined,
+        };
+    }
+
+    return true;
+}
 
 function recognizeBoolean(): boolean {
     if (phraseType != 'closing') return false;
@@ -98,11 +133,11 @@ function recognizeBoolean(): boolean {
     if (phraseText != 'true' && phraseText != 'false') return false;
     const booleanValue: 0 | 1 = getValueOfBooleanString(phraseText);
 
-    currentUnit = {
+    let draftedUnit: Unit = {
         type: 'boolean',
         value: booleanValue,
     };
-    closeCurrentUnit();
+    processUnitWithValue(draftedUnit);
 
     return true;
 }
@@ -118,8 +153,42 @@ function recognizeFalsyValues(): boolean {
     )
         return false;
 
-    currentUnit = {
+    const draftedUnit: Unit = {
         type: phraseText,
+    };
+    processUnitWithValue(draftedUnit);
+
+    return true;
+}
+
+function recognizeIntegerOrFloat(): boolean {
+    if (phraseType != 'closing') return false;
+
+    const phraseText: string = phraseCharacters.join('');
+    const parsedNumber: number = parseFloat(phraseText);
+
+    if (isNaN(parsedNumber) == true) return false;
+
+    let unitType: 'float' | 'integer' = 'float';
+    if (Number.isInteger(parsedNumber)) {
+        unitType = 'integer';
+    }
+
+    const draftedUnit: Unit = {
+        type: unitType,
+        value: parsedNumber,
+    };
+    processUnitWithValue(draftedUnit);
+
+    return true;
+}
+
+function recognizeComment(): boolean {
+    if (phraseType != 'comment') return false;
+
+    currentUnit = {
+        type: 'comment',
+        content: phraseCharacters.join(''),
     };
     closeCurrentUnit();
 
@@ -129,8 +198,7 @@ function recognizeFalsyValues(): boolean {
 function recognizeMultiwordPhraseUnit(): boolean {
     if (phraseType != 'closing') return false;
 
-    const phraseParts: MultiwordPhraseParts =
-        getPartsOfPMultiwordPhrase(phraseCharacters);
+    const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
     if (
@@ -164,41 +232,6 @@ function recognizeMultiwordPhraseUnit(): boolean {
     }
 
     closeCurrentUnit();
-
-    return true;
-}
-
-function recognizeIntegerOrFloat(): boolean {
-    if (phraseType != 'closing') return false;
-
-    const phraseText: string = phraseCharacters.join('');
-    const parsedNumber: number = parseFloat(phraseText);
-
-    if (isNaN(parsedNumber) == true) return false;
-
-    let unitType: 'float' | 'integer' = 'float';
-    if (Number.isInteger(parsedNumber)) {
-        unitType = 'integer';
-    }
-
-    currentUnit = {
-        type: unitType,
-        value: parsedNumber,
-    };
-    closeCurrentUnit();
-
-    return true;
-}
-
-function recognizeComment(): boolean {
-    if (phraseType != 'comment') return false;
-
-    currentUnit = {
-        type: 'comment',
-        content: phraseCharacters.join(''),
-    };
-    closeCurrentUnit();
-
     return true;
 }
 
@@ -206,11 +239,32 @@ function recognizeString(): boolean {
     if (phraseType != 'safe-string' && phraseType != 'normal-string')
         return false;
 
-    currentUnit = {
+    const draftedUnit: Unit = {
         type: phraseType,
         content: phraseCharacters.join(''),
     };
-    closeCurrentUnit();
+    processUnitWithValue(draftedUnit);
+
+    return true;
+}
+
+function recognizeVariableDeclaration(): boolean {
+    if (phraseType != 'opening') return false;
+
+    const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+    const headString: string = phraseParts.head.join('');
+
+    if (headString != 'constant' && headString != 'mutable') return false;
+
+    const dataType: string = phraseParts.body.join('');
+
+    currentUnit = {
+        type: 'variable-declatation',
+        isMutable: headString == 'mutable',
+        dataType,
+        name: '',
+        value: undefined,
+    };
 
     return true;
 }

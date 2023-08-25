@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { MultiwordPhraseParts } from '../types/parser';
+import { HeadAndBody } from '../types/parser';
 
-export function getPartsOfPMultiwordPhrase(
+export function getHeadAndBody(
     phraseCharaccters: string[],
-): MultiwordPhraseParts {
-    const phraseParts: MultiwordPhraseParts = {
+): HeadAndBody {
+    const phraseParts: HeadAndBody = {
         head: [],
         body: [],
     };

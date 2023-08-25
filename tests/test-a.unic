@@ -1,12 +1,6 @@
-module MyModule;
-language sh;
+constant string: myString = 'Hello!';
+mutable string: myString = 'Hello!';
 
-import OtherModule;
+myString = 'This is a Test';
 
-section Test;
-'normal string';
-"safe string";
-42; 42.123; 234Abc!
-undefined; null; NaN;
-true; false;
-# this is a comment
+constant int: testNumber = 123.42;
