@@ -40,7 +40,11 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
     // first level is same grammar as function body
     scopes = ['function-body'];
 
-    for (indexOfCurrentPhrase = 0; indexOfCurrentPhrase < phrases.length; indexOfCurrentPhrase++) {
+    for (
+        indexOfCurrentPhrase = 0;
+        indexOfCurrentPhrase < phrases.length;
+        indexOfCurrentPhrase++
+    ) {
         phrase = phrases[indexOfCurrentPhrase];
         phraseType = phrase.type;
         phraseCharacters = phrase.rawTextCharacters;
@@ -129,17 +133,33 @@ function recognizeMultiwordPhraseUnit(): boolean {
         getPartsOfPMultiwordPhrase(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 
-    if (headString != 'import' && headString != 'module' && headString != 'section') return false;
+    if (
+        headString != 'import' &&
+        headString != 'language' &&
+        headString != 'module' &&
+        headString != 'section'
+    )
+        return false;
 
-    if (headString == 'module') {
+    if (headString == 'import') {
+        currentUnit = {
+            type: 'import',
+            sourceName: phraseParts.body.join(''),
+        };
+    } else if (headString == 'language') {
+        currentUnit = {
+            type: 'language-definition',
+            targetLanguage: phraseParts.body.join(''),
+        };
+    } else if (headString == 'module') {
         currentUnit = {
             type: 'module-name-definition',
             moduleName: phraseParts.body.join(''),
         };
-    } else if (headString == 'import') {
+    } else if (headString == 'section') {
         currentUnit = {
-            type: 'import',
-            sourceName: phraseParts.body.join(''),
+            type: 'section-marker',
+            sectionName: phraseParts.body.join(''),
         };
     }
 
