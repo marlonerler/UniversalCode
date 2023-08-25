@@ -42,7 +42,14 @@ export interface Phrase {
  * closed: ending with a period, final.
  * open: ending with a colon, not the end of a block.
  */
-export type PhraseEndMarkers = 'final-centence-end-marker' | 'opening-sentence-end-marker' | 'continuous-marker' | 'separating-marker' | 'assignment-marker' | 'normal-string-marker' | 'safe-string-marker';
+export type PhraseEndMarkers = 
+	'final-centence-end-marker' | 
+	'opening-sentence-end-marker' | 
+	'continuous-marker' | 
+	'separating-marker' | 
+	'assignment-marker' | 
+	'normal-string-marker' | 
+	'safe-string-marker';
 
 export interface Variable {
     name: string;

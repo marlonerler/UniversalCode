@@ -1,3 +1,8 @@
+rename# 
+	greet: greetPersonByNameAndAge.
+	name: nameOfperson.
+end# 
+
 function greet: string name, number age; returning string:
      string greeting = 'Hello, $name!'   .
      return greeting.
