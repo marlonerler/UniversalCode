@@ -123,10 +123,10 @@ function recognizeComment(indexOfCurrentCharacter: number, character: string, le
 }
 
 function recognizeSentence(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
-    if (character != '.' && character != ':') return false;
+    if (character != ';' && character != ':') return false;
 
     switch (character) {
-        case '.': {
+        case ';': {
             phraseType = 'closing';
             break;
         }

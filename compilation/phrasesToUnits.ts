@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { ERROR_NO_PHRASE_RECOGNITION } from "../constants/errors";
-import { Phrase, PhraseType, ScopeType, Unit } from "../types/parser";
-import {  } from "../utility/statements";
+import { ERROR_NO_PHRASE_RECOGNITION } from '../constants/errors';
+import { MultiwordPhraseParts, Phrase, PhraseType, ScopeType, Unit } from '../types/parser';
+import { getPartsOfPMultiwordPhrase, getValueOfBooleanString } from '../utility/parser';
 
 // DATA
 let units: Unit[];
@@ -33,7 +33,14 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
         let couldClassifyPhrase: boolean = false;
         const parseProcedure: phraseRecognitionFunction[] = [
             recognizeComment,
-        ]
+
+            recognizeBoolean,
+            recognizeFalsyValues,
+            recognizeIntegerOrFloat,
+            recognizeString,
+
+            recognizeImport,
+        ];
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: phraseRecognitionFunction = parseProcedure[j];
             couldClassifyPhrase = functionToRun(i, type, rawTextCharacters);
@@ -63,21 +70,132 @@ function closeCurrentUnit(indexOfCurrentPhrase: number): void {
 }
 
 // recognition
-type phraseRecognitionFunction = (indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]) => boolean;
+type phraseRecognitionFunction = (
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+) => boolean;
 
-function recognizeBoolean(indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]): boolean {
-    
+function recognizeBoolean(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
+    if (phraseType != 'closing') return false;
+
+    const phraseText: string = characters.join('');
+    if (phraseText != 'true' && phraseText != 'false') return false;
+    const booleanValue: 0 | 1 = getValueOfBooleanString(phraseText);
+
+    currentUnit = {
+        type: 'boolean',
+        value: booleanValue,
+    };
+    closeCurrentUnit(indexOfCurrentPhrase);
+
+    return true;
 }
 
-function recognizeComment(indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]): boolean {
+function recognizeFalsyValues(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
+    if (phraseType != 'closing') return false;
+
+    const phraseText: string = characters.join('');
+    if (
+        phraseText != 'undefined' &&
+        phraseText != 'null' &&
+        phraseText != 'NaN'
+    )
+        return false;
+
+    currentUnit = {
+        type: phraseText,
+    };
+    closeCurrentUnit(indexOfCurrentPhrase);
+
+    return true;
+}
+
+function recognizeImport(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
+    if (phraseType != 'closing') return false;
+
+    const phraseParts: MultiwordPhraseParts = getPartsOfPMultiwordPhrase(characters);
+    const headString: string = phraseParts.head.join('');
+
+    console.log(phraseParts);
+    if (headString != 'import') return false;
+
+    currentUnit = {
+        type: 'import',
+        sourceName: phraseParts.body.join(''),
+    }
+    closeCurrentUnit(indexOfCurrentPhrase);
+
+    return true;
+}
+
+function recognizeIntegerOrFloat(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
+    if (phraseType != 'closing') return false;
+
+    const phraseText: string = characters.join('');
+    const parsedNumber: number = parseFloat(phraseText);
+    console.log(phraseText, parsedNumber);
+    if (isNaN(parsedNumber) == true) return false;
+
+    let unitType: 'float' | 'integer' = 'float';
+    if (Number.isInteger(parsedNumber)) {
+        unitType = 'integer';
+    }
+
+    currentUnit = {
+        type: unitType,
+        value: parsedNumber,
+    };
+    closeCurrentUnit(indexOfCurrentPhrase);
+
+    return true;
+}
+
+function recognizeComment(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
     if (phraseType != 'comment') return false;
 
     currentUnit = {
         type: 'comment',
-        comment: characters.join(''),
-    }
+        content: characters.join(''),
+    };
+    closeCurrentUnit(indexOfCurrentPhrase);
 
-    closeCurrentUnit(indexOfCurrentPhrase)
+    return true;
+}
+
+function recognizeString(
+    indexOfCurrentPhrase: number,
+    phraseType: PhraseType,
+    characters: string[],
+): boolean {
+    if (phraseType != 'safe-string' && phraseType != 'normal-string')
+        return false;
+
+    currentUnit = {
+        type: phraseType,
+        content: characters.join(''),
+    };
+    closeCurrentUnit(indexOfCurrentPhrase);
 
     return true;
 }

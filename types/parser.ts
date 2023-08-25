@@ -37,7 +37,7 @@ export type PhraseType =
     | 'safe-string'
     | 'comment';
 
-export interface IntroducingPhraseParts {
+export interface MultiwordPhraseParts {
     head: string[];
     body: string[];
 }
@@ -54,7 +54,7 @@ export type Unit =
         type: 'null';
     }
     | {
-        type: 'nan';
+        type: 'NaN';
     }
     | {
         type: 'integer';
@@ -66,8 +66,17 @@ export type Unit =
     }
 
     | {
+        type: 'normal-string';
+        content: string;
+    }
+    | {
+        type: 'safe-string';
+        content: string;
+    }
+
+    | {
         type: 'comment';
-        comment: string;
+        content: string;
     }
     | {
         type: 'import';

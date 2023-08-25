@@ -1,5 +1,8 @@
+import something;
+
+'normal string';
+"safe string";
+42; 42.123; 234Abc;
+undefined; null; NaN;
+true; false;
 # this is a comment
-
-language sh.
-
-declare boolean: myBoolean = false.
