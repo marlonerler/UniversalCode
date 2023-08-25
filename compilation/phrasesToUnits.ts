@@ -178,7 +178,14 @@ function processEnumeratingMultiwordUnit(
             break;
         }
         default: {
-            return false;
+            if (getCurrentScopeType() != 'interface-body') return false;
+
+            currentUnit = {
+                type: 'interface-property',
+                name: bodyString,
+                dataType: headString,
+            };
+            closeCurrentUnit();
         }
     }
 
@@ -199,6 +206,15 @@ function processOpeningMultiwordUnit(
                 name: bodyString,
                 parameters: [],
             };
+            break;
+        }
+        case 'interface': {
+            currentUnit = {
+                type: 'interface-head',
+                name: bodyString,
+            };
+            closeCurrentUnit();
+            scopes.push('interface-body');
             break;
         }
         case 'if':
@@ -499,8 +515,6 @@ function recognizeFunctionDefinition(): boolean {
 }
 
 function recognizeMultiwordPhraseUnit(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
-
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
     const headString: string = phraseParts.head.join('');
 

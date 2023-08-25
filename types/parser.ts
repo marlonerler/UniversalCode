@@ -162,11 +162,11 @@ export type Unit =
           cases: Extract<Unit, { type: 'case-definition' }>[];
       }
     | {
-          type: 'interface-definition';
+          type: 'interface-head';
           name: string;
       }
     | {
-          type: 'interface-item';
+          type: 'interface-property';
           name: string;
           dataType: string;
       }

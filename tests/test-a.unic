@@ -1,2 +1,4 @@
-while true:
-end loop;
+interface Person:
+    string name,
+    int age,
+end ifc;
