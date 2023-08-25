@@ -103,9 +103,16 @@ export type Unit =
           name: string;
           value: Unit | undefined;
       }
+
     | {
           type: 'command-head';
       }
+    | {
+        type: 'rename-command';
+        oldName: string | undefined;
+        newName: string | undefined;
+    }
+
     | {
           type: 'function-head';
           returnType: string;

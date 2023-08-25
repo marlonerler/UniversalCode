@@ -1,6 +1,5 @@
-constant string: myString = 'Hello!';
-mutable string: myString = 'Hello!';
+language sh;
+module MyModule;
+section Main;
 
-myString = 'This is a Test';
-
-constant int: testNumber = 123.42;
+constant string: myString = 'Hello, world!';

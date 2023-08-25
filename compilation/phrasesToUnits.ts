@@ -107,7 +107,9 @@ function processUnitWithValue(draftedUnit: Unit): void {
 type phraseRecognitionFunction = () => boolean;
 
 function recognizeAssignment() {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'assignment-key') return false;
+
     const phraseText: string = phraseCharacters.join('');
 
     if (
@@ -127,6 +129,7 @@ function recognizeAssignment() {
 }
 
 function recognizeBoolean(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -143,6 +146,7 @@ function recognizeBoolean(): boolean {
 }
 
 function recognizeFalsyValues(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -162,6 +166,7 @@ function recognizeFalsyValues(): boolean {
 }
 
 function recognizeIntegerOrFloat(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -184,6 +189,7 @@ function recognizeIntegerOrFloat(): boolean {
 }
 
 function recognizeComment(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'comment') return false;
 
     currentUnit = {
@@ -196,6 +202,7 @@ function recognizeComment(): boolean {
 }
 
 function recognizeMultiwordPhraseUnit(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'closing') return false;
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
@@ -236,6 +243,7 @@ function recognizeMultiwordPhraseUnit(): boolean {
 }
 
 function recognizeString(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'safe-string' && phraseType != 'normal-string')
         return false;
 
@@ -249,6 +257,7 @@ function recognizeString(): boolean {
 }
 
 function recognizeVariableDeclaration(): boolean {
+    if (getCurrentScopeType() != 'function-body') return false;
     if (phraseType != 'opening') return false;
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
