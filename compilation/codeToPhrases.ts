@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { ERROR_NO_RECOGNITION, ERROR_NO_PHRASE_TYPE } from "../constants/errors";
+import { ERROR_NO_PHRASE_RECOGNITION, ERROR_NO_STATEMENT_TYPE } from "../constants/errors";
 import { Phrase, PhraseType } from "../types/parser";
 import { checkIfCharacterIsSpace, removeOuterSpacesFromCharacterArray } from "../utility/characters";
 
@@ -9,7 +9,7 @@ let phrases: Phrase[];
 // current phrase
 let indexOfCurrentPhrase: number;
 let charactersOfCurrentPhrase: string[];
-let phraseType: PhraseType;
+let phraseType: PhraseType | undefined;
 
 // current scope/block
 let markerOfCurrentString: string | undefined;
@@ -23,6 +23,7 @@ export function getPhrasesFromCode(code: string): Phrase[] {
     // current phrase
     indexOfCurrentPhrase = 0;
     charactersOfCurrentPhrase = [];
+    phraseType = undefined;
 
     // current scope/block
     markerOfCurrentString = undefined;
@@ -35,21 +36,21 @@ export function getPhrasesFromCode(code: string): Phrase[] {
         const leadingCharacter: string | undefined = code[i - 1];
 
         let couldClassifyCharacter: boolean = false;
-        const parseProcedure: recognitionFunction[] = [
-            processForString,
-            processForComment,
-            processForSentence,
-            processForSentencePart,
-            processForAssignment,
-            processGenericCharacter,
+        const parseProcedure: characterRecognitionFunction[] = [
+            recognizeString,
+            recognizeComment,
+            recognizeSentence,
+            recognizeSentencePart,
+            recognizeAssignment,
+            recognizeOther,
         ]
         for (let j = 0; j < parseProcedure.length; j++) {
-            const functionToRun: recognitionFunction = parseProcedure[j];
+            const functionToRun: characterRecognitionFunction = parseProcedure[j];
             couldClassifyCharacter = functionToRun(i, character, leadingCharacter);
             if (couldClassifyCharacter == true) break;
         }
         if (couldClassifyCharacter == false) {
-            throw ERROR_NO_RECOGNITION(i);
+            throw ERROR_NO_PHRASE_RECOGNITION(i);
         }
 
         isEscaping = (character == '\\' && leadingCharacter != '\\');
@@ -62,7 +63,7 @@ export function getPhrasesFromCode(code: string): Phrase[] {
 // general
 function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: boolean): void {
     if (phraseType == undefined) {
-        throw ERROR_NO_PHRASE_TYPE(indexOfCurrentCharacter);
+        throw ERROR_NO_STATEMENT_TYPE(indexOfCurrentCharacter);
     }
 
     if (charactersOfCurrentPhrase.length == 0) {
@@ -90,9 +91,9 @@ function resetCurrentPhrase(shouldIncreaseIndex: boolean): void {
 }
 
 // recognition
-type recognitionFunction = (indexOfCurrentCharacter: number, character: string, leadingCharacter: string) => boolean;
+type characterRecognitionFunction = (indexOfCurrentCharacter: number, character: string, leadingCharacter: string) => boolean;
 
-function processForAssignment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeAssignment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if (character != '=') return false;
 
     phraseType = 'assignment-key';
@@ -101,7 +102,7 @@ function processForAssignment(indexOfCurrentCharacter: number, character: string
     return true;
 }
 
-function processForComment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeComment(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if (isCurrentlyInsideComment == true) {
         if (character == '\n') {
             phraseType = 'comment';
@@ -121,7 +122,7 @@ function processForComment(indexOfCurrentCharacter: number, character: string, l
     }
 }
 
-function processForSentence(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeSentence(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if (character != '.' && character != ':') return false;
 
     switch (character) {
@@ -140,7 +141,7 @@ function processForSentence(indexOfCurrentCharacter: number, character: string, 
     return true;
 }
 
-function processForSentencePart(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeSentencePart(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if (character == ',') {
         phraseType = 'continuing';
         closeCurrentPhrase(indexOfCurrentCharacter, true);
@@ -156,7 +157,7 @@ function processForSentencePart(indexOfCurrentCharacter: number, character: stri
     }
 }
 
-function processForString(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeString(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if ((character != '"' && character != '\'') || isEscaping == true) {
         // character is not string marker
 
@@ -195,7 +196,7 @@ function processForString(indexOfCurrentCharacter: number, character: string, le
     return true;
 }
 
-function processGenericCharacter(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
+function recognizeOther(indexOfCurrentCharacter: number, character: string, leadingCharacter: string): boolean {
     if (character == '\n') {
         //do not preserve newlines
         character = ' ';

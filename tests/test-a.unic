@@ -1,8 +1,7 @@
+language sh
+
 # this is a comment
+import SomeModule
+module SomeOtherModule
 
-function greetByName: string name, number age; returning string: 
-    declare string: greetingString = 'Hello, $name!'.
-    return string.
-end fn.
-
-This is opening: this is closing.
+Main section

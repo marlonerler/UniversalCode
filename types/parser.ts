@@ -47,17 +47,47 @@ export type PhraseType =
 
 
 export interface Statement {
-    statementType: string;
-    /** Data, depending on lineType. */
-    data: { [key: string]: string };
+    type: string;
 }
 export interface IntroducingStatementParts {
     head: string[];
     body: string[];
 }
 
-export type ScopeType = 
+export class CommentStatement {
+    characters: string[];
+    constructor(characters: CommentStatement['characters']) {
+        this.characters = characters;
+    }
+}
+
+export type StatementType = 
+    'comment' |
+    'import' |
+    'module-name-definition' |
+    'section-marker' |
+    'target-language-definition' |
+
+    'assignment' |
+    'variable-declaration' |
+
+    'command-head' |
     'function-head' |
+
+    'case-head' |
+    'if-head' |
+    'for-head' |
+    'switch-head' |
+    'while-head' |
+
+    'interface-head' |
+    'type-definition' |
+
+    'end-marker';
+
+export type ScopeType = 
+    'function-parameter-list' |
+    'function-return-type-definition' |
     'function-body' |
 
     'variable-declaration' |
