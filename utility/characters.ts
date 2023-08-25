@@ -41,7 +41,7 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
 
     // rebuild string without outer spaces
     for (let i = 0; i < stringToClean.length; i++) {
-        if (indicesOfCharactersToRemove.has(i) == false) continue;
+        if (indicesOfCharactersToRemove.has(i) == true) continue;
 
         cleanedStringCharacters.push(stringToClean[i]);
     }

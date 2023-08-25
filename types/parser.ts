@@ -35,14 +35,14 @@ export interface Statement {
 export interface Phrase {
     rawText: string;
     /** Determined by ending symbol (. or :). */
-    type: PhraseTypes;
+    endMarker: PhraseEndMarkers;
 }
 
 /** Types of a statement:
  * closed: ending with a period, final.
  * open: ending with a colon, not the end of a block.
  */
-export type PhraseTypes = 'closed' | 'continuous' | 'separating' | 'opening' | 'assignment-start' | 'string-normal' | 'string-safe';
+export type PhraseEndMarkers = 'final-centence-end-marker' | 'opening-sentence-end-marker' | 'continuous-marker' | 'separating-marker' | 'assignment-marker' | 'normal-string-marker' | 'safe-string-marker';
 
 export interface Variable {
     name: string;

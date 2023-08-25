@@ -2,100 +2,106 @@
 
 // IMPORTS
 import { ERR_NO_STATEMENT_TYPE } from "../constants/errors";
-import { ParseResult, Phrase, PhraseTypes } from "../types/parser";
+import { ParseResult, Phrase, PhraseEndMarkers } from "../types/parser";
 import { checkIfCharacterIsSpace, removeOuterSpacesFromString } from "../utility/characters";
 
 // MAIN
 export function parseUnicCode(code: string): ParseResult {
-    const rawStatements: Phrase[] = splitCodeIntoRawStatements(code);
-    console.log(rawStatements);
+    const phrases: Phrase[] = getPhrasesFromCode(code);
+    console.log(phrases);
 
     throw 'incomplete';
 }
 
-function splitCodeIntoRawStatements(code: string): Phrase[] {
-    const statements: Phrase[] = [];
-    let indexOfCurrentStatement: number = 0;
-    let textOfCurrentStatement: string = '';
-    let isCurrentlyInString: boolean = false;
+function getPhrasesFromCode(code: string): Phrase[] {
+    const phrases: Phrase[] = [];
+    let indexOfCurrentPhrase: number = 0;
+    let charactersOfCurrentPhrase: string[] = [];
+    let markerOfCurrentString: string|undefined = undefined; 
 
     //loop over every character
     for (let i: number = 0; i < code.length; i++) {
         let character: string = code[i];
 
-        let rawStatementType: PhraseTypes;
+        let endMarker: PhraseEndMarkers;
 
-        function closeStatement(shouldCleanString: boolean): void {
-            if (rawStatementType == undefined) {
+        function closeCurrentPhrase(shouldCleanString: boolean): void {
+            if (endMarker == undefined) {
                 throw ERR_NO_STATEMENT_TYPE(i);
             }
 
-            if (shouldCleanString == true) {
-                textOfCurrentStatement = removeOuterSpacesFromString(textOfCurrentStatement);
-            }
-
-            if (textOfCurrentStatement == '') {
+            if (charactersOfCurrentPhrase.length == 0) {
                 //do not add empty statements
-                clearStatement(false);
+                resetCurrentPhrase(false);
                 return;
             }
 
-            const newStatement: Phrase = {
-                rawText: textOfCurrentStatement,
-                type: rawStatementType,
-            }
-            statements[indexOfCurrentStatement] = newStatement;
+            let textOfCurrentPhrase: string = charactersOfCurrentPhrase.join('');
 
-            clearStatement(true);
+            if (shouldCleanString == true) {
+                textOfCurrentPhrase = removeOuterSpacesFromString(textOfCurrentPhrase);
+            }
+
+            const newPhrase: Phrase = {
+                rawText: textOfCurrentPhrase,
+                endMarker: endMarker,
+            }
+            phrases[indexOfCurrentPhrase] = newPhrase;
+
+            resetCurrentPhrase(true);
         }
 
-        function clearStatement(shouldIncreaseIndex: boolean) {
-            if (shouldIncreaseIndex) indexOfCurrentStatement++;
-            textOfCurrentStatement = '';
+        function resetCurrentPhrase(shouldIncreaseIndex: boolean): void {
+            if (shouldIncreaseIndex) indexOfCurrentPhrase++;
+            charactersOfCurrentPhrase = [];
         }
         if (character == '"' || character == '\'') {
             switch (character) {
                 case '"': {
-                    rawStatementType = 'string-safe';
+                    endMarker = 'safe-string-marker';
                     break;
                 }
                 case '\'': {
-                    rawStatementType = 'string-normal';
+                    endMarker = 'normal-string-marker';
                     break;
                 }
             }
 
-            isCurrentlyInString = !isCurrentlyInString;
-            if (isCurrentlyInString == true) {
-                clearStatement(false);
+            if (markerOfCurrentString == undefined) {
+                markerOfCurrentString = character;
+                //delete start of previous phrase and start new string
+                resetCurrentPhrase(false);
                 continue;
+            } else if (markerOfCurrentString == character) {
+                markerOfCurrentString = undefined;
+                closeCurrentPhrase(false);
+            } else {
+                charactersOfCurrentPhrase.push(character);    
             }
-
-            closeStatement(false);
-        } else if (isCurrentlyInString == true) {
-            textOfCurrentStatement += character;
+        } else if (markerOfCurrentString != undefined) {
+            charactersOfCurrentPhrase.push(character);
         } else if (character == '.' || character == ':') {
             switch (character) {
                 case '.': {
-                    rawStatementType = 'closed';
+                    endMarker = 'final-centence-end-marker';
                     break;
                 }
                 case ':': {
-                    rawStatementType = 'opening';
+                    endMarker = 'opening-sentence-end-marker';
                     break;
                 }
             }
 
-            closeStatement(true);
+            closeCurrentPhrase(true);
         } else if (character == ',') {
-            rawStatementType = 'continuous';
-            closeStatement(true);
+            endMarker = 'continuous-marker';
+            closeCurrentPhrase(true);
         } else if (character == ';') {
-            rawStatementType = 'separating';
-            closeStatement(true);
+            endMarker = 'separating-marker';
+            closeCurrentPhrase(true);
         } else if (character == '=') {
-            rawStatementType = 'assignment-start';
-            closeStatement(true);
+            endMarker = 'assignment-marker';
+            closeCurrentPhrase(true);
         } else {
             if (character == '\n') {
                 //do not preserve newlines
@@ -106,12 +112,12 @@ function splitCodeIntoRawStatements(code: string): Phrase[] {
             const leadingCharacter: string | undefined = code[i - 1];
             const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
             const leadingCharacterIsSpace: boolean = leadingCharacter != undefined && checkIfCharacterIsSpace(leadingCharacter);
-            const characterShouldBeIgnoredUnlessInString: boolean = characterIsSpace == true && leadingCharacterIsSpace == true;
+            const characterShouldBeIgnored: boolean = characterIsSpace == true && leadingCharacterIsSpace == true;
 
-            if (characterShouldBeIgnoredUnlessInString) continue;
-            textOfCurrentStatement += character;
+            if (characterShouldBeIgnored) continue;
+            charactersOfCurrentPhrase.push(character);
         }
     }
 
-    return statements;
+    return phrases;
 }
