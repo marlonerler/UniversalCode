@@ -105,6 +105,7 @@ function getCurrentScopeType(): ScopeType {
 function processClosingMultiwordUnit(
     phraseParts: HeadAndBody,
     headString: string,
+    bodyString: string,
 ): boolean {
     switch (headString) {
         case 'import': {
@@ -154,9 +155,8 @@ function processClosingMultiwordUnit(
 function processEnumeratingMultiwordUnit(
     phraseParts: HeadAndBody,
     headString: string,
+    bodyString: string,
 ): boolean {
-    const bodyString = phraseParts.body.join('');
-
     switch (headString) {
         case 'count':
         case 'each':
@@ -195,9 +195,8 @@ function processEnumeratingMultiwordUnit(
 function processOpeningMultiwordUnit(
     phraseParts: HeadAndBody,
     headString: string,
+    bodyString: string,
 ): boolean {
-    const bodyString: string = phraseParts.body.join('');
-
     switch (headString) {
         case 'function': {
             currentUnit = {
@@ -525,13 +524,14 @@ function recognizeFunctionDefinition(): boolean {
 function recognizeMultiwordPhraseUnit(): boolean {
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
     const headString: string = phraseParts.head.join('');
+    const bodyString = phraseParts.body.join('');
 
     if (phraseType == 'closing') {
-        return processClosingMultiwordUnit(phraseParts, headString);
+        return processClosingMultiwordUnit(phraseParts, headString, bodyString);
     } else if (phraseType == 'opening') {
-        return processOpeningMultiwordUnit(phraseParts, headString);
+        return processOpeningMultiwordUnit(phraseParts, headString, bodyString);
     } else if (phraseType == 'enumerating') {
-        return processEnumeratingMultiwordUnit(phraseParts, headString);
+        return processEnumeratingMultiwordUnit(phraseParts, headString, bodyString);
     }
 
     return false;
