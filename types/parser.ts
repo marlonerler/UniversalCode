@@ -2,7 +2,7 @@
 
 // FUNCTION
 export interface ParseResult {
-    statements: Statement[];
+    units: Unit[];
     errors: string[];
     warnings: string[];
     notes: string[];
@@ -27,75 +27,158 @@ export interface Phrase {
     type: PhraseType;
 }
 
-/** Types of a statement:
- * closed: ending with a period, final.
- * open: ending with a colon, not the end of a block.
- */
 export type PhraseType =
-    'closing' |
-    'introducing' |
-    
-    'continuing' |
-    'separating' |
+    | 'closing'
+    | 'introducing'
+    | 'continuing'
+    | 'separating'
+    | 'assignment-key'
+    | 'normal-string'
+    | 'safe-string'
+    | 'comment';
 
-    'assignment-key' |
-
-    'normal-string' |
-    'safe-string' |
-
-    'comment';
-
-
-export interface Statement {
-    type: string;
-}
-export interface IntroducingStatementParts {
+export interface IntroducingPhraseParts {
     head: string[];
     body: string[];
 }
 
-export class CommentStatement {
-    characters: string[];
-    constructor(characters: CommentStatement['characters']) {
-        this.characters = characters;
+export type Unit =
+    | {
+        type: 'boolean';
+        value: 0 | 1;
     }
-}
+    | {
+        type: 'undefined';
+    }
+    | {
+        type: 'null';
+    }
+    | {
+        type: 'nan';
+    }
+    | {
+        type: 'integer';
+        value: number;
+    }
+    | {
+        type: 'float';
+        value: number;
+    }
 
-export type StatementType = 
-    'comment' |
-    'import' |
-    'module-name-definition' |
-    'section-marker' |
-    'target-language-definition' |
+    | {
+        type: 'comment';
+        comment: string;
+    }
+    | {
+        type: 'import';
+        sourceName: string;
+    }
+    | {
+        type: 'module-name-definition';
+        moduleName: string;
+    }
+    | {
+        type: 'section-marker';
+        sectionName: string;
+    }
+    | {
+        type: 'language-definition';
+        targetLanguage: string;
+    }
+    | {
+        type: 'assignment';
+        key: string;
+        value: string;
+    }
+    | {
+        type: 'Assignment';
+        key: string;
+        value: string;
+    }
+    | {
+        type: 'variable-declatation';
+        isMutable: boolean;
+        dataType: string;
+        name: string;
+        value: Unit;
+    }
+    | {
+        type: 'command-head';
+    }
+    | {
+        type: 'function-head';
+        returnType: string;
+        name: string;
+        parameters: Extract<Unit, { type: 'function-parameter' }>[];
+    }
+    | {
+        type: 'function-parameter';
+        dataType: string;
+        name: string;
+    }
+    | {
+        type: 'if-head';
+        condition: string;
+    }
+    | {
+        type: 'elif-head';
+        condition: string;
+    }
+    | {
+        type: 'else-head';
+    }
+    | {
+        type: 'for-head';
+        specification: 'object-of-iterable' | 'index-in-iterable' | 'count-until-number';
+        variableName: string;
+        iterationDenominator: string;
+    }
+    | {
+        type: 'while-head';
+        condition: string;
+    }
 
-    'assignment' |
-    'variable-declaration' |
+    | {
+        type: 'switch-head';
+        value: string;
+    }
+    | {
+        type: 'case-definition';
+        referenceValue: string;
+    }
+    | {
+        type: 'case-head';
+        cases: Extract<Unit, { type: 'case-definition' }>[];
+    }
 
-    'command-head' |
-    'function-head' |
+    | {
+        type: 'interface-definition';
+        name: string;
+    }
+    | {
+        type: 'interface-item';
+        name: string;
+        dataType: string;
+    }
+    | {
+        type: 'type-definition';
+        name: string;
+        typeReferences: string[];
+    }
 
-    'case-head' |
-    'if-head' |
-    'for-head' |
-    'switch-head' |
-    'while-head' |
+    | {
+        type: 'end-marker';
+        endingScope: ScopeType;
+    };
 
-    'interface-head' |
-    'type-definition' |
-
-    'end-marker';
-
-export type ScopeType = 
-    'function-parameter-list' |
-    'function-return-type-definition' |
-    'function-body' |
-
-    'variable-declaration' |
-
-    'control-flow-body' |
-
-    'switch-body' |
-    'case-body';
+export type ScopeType =
+    | 'function-parameter-list'
+    | 'function-return-type-definition'
+    | 'function-body'
+    | 'variable-declaration'
+    | 'control-flow-body'
+    | 'switch-body'
+    | 'case-body';
 
 export interface Variable {
     name: string;

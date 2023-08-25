@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { ERROR_NO_PHRASE_RECOGNITION, ERROR_NO_STATEMENT_TYPE } from "../constants/errors";
+import { ERROR_NO_PHRASE_RECOGNITION, ERROR_NO_PHRASE_TYPE } from "../constants/errors";
 import { Phrase, PhraseType } from "../types/parser";
 import { checkIfCharacterIsSpace, removeOuterSpacesFromCharacterArray } from "../utility/characters";
 
@@ -7,7 +7,6 @@ import { checkIfCharacterIsSpace, removeOuterSpacesFromCharacterArray } from "..
 let phrases: Phrase[];
 
 // current phrase
-let indexOfCurrentPhrase: number;
 let charactersOfCurrentPhrase: string[];
 let phraseType: PhraseType | undefined;
 
@@ -21,7 +20,6 @@ export function getPhrasesFromCode(code: string): Phrase[] {
     phrases = [];
 
     // current phrase
-    indexOfCurrentPhrase = 0;
     charactersOfCurrentPhrase = [];
     phraseType = undefined;
 
@@ -63,12 +61,12 @@ export function getPhrasesFromCode(code: string): Phrase[] {
 // general
 function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: boolean): void {
     if (phraseType == undefined) {
-        throw ERROR_NO_STATEMENT_TYPE(indexOfCurrentCharacter);
+        throw ERROR_NO_PHRASE_TYPE(indexOfCurrentCharacter);
     }
 
     if (charactersOfCurrentPhrase.length == 0) {
-        //do not add empty statements
-        resetCurrentPhrase(false);
+        //do not add empty phrases
+        resetCurrentPhrase();
         return;
     }
 
@@ -80,13 +78,12 @@ function closeCurrentPhrase(indexOfCurrentCharacter: number, shouldCleanString: 
         rawTextCharacters: charactersOfCurrentPhrase,
         type: phraseType,
     }
-    phrases[indexOfCurrentCharacter] = newPhrase;
+    phrases.push(newPhrase);
 
-    resetCurrentPhrase(true);
+    resetCurrentPhrase();
 }
 
-function resetCurrentPhrase(shouldIncreaseIndex: boolean): void {
-    if (shouldIncreaseIndex) indexOfCurrentPhrase++;
+function resetCurrentPhrase(): void {
     charactersOfCurrentPhrase = [];
 }
 
@@ -114,6 +111,8 @@ function recognizeComment(indexOfCurrentCharacter: number, character: string, le
 
         return true;
     } else if (character == '#') {
+        //delete start of previous phrase and start comment
+        resetCurrentPhrase();
         isCurrentlyInsideComment = true;
 
         return true;
@@ -184,7 +183,7 @@ function recognizeString(indexOfCurrentCharacter: number, character: string, lea
     if (markerOfCurrentString == undefined) {
         markerOfCurrentString = character;
         //delete start of previous phrase and start new string
-        resetCurrentPhrase(false);
+        resetCurrentPhrase();
     } else if (markerOfCurrentString == character) {
         markerOfCurrentString = undefined;
         closeCurrentPhrase(indexOfCurrentCharacter, false);
@@ -202,7 +201,7 @@ function recognizeOther(indexOfCurrentCharacter: number, character: string, lead
         character = ' ';
     }
 
-    // check if character should be added to statement text
+    // check if character should be added to phrase text
     const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
     const leadingCharacterIsSpace: boolean = leadingCharacter != undefined && checkIfCharacterIsSpace(leadingCharacter);
     const characterShouldBeIgnored: boolean = characterIsSpace == true && leadingCharacterIsSpace == true;

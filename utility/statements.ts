@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { IntroducingStatementParts } from "../types/parser";
+import { IntroducingPhraseParts } from "../types/parser";
 
-export function getPartsOfIntroducingStatement(statementTextCharacters: string[]): IntroducingStatementParts {
-    const statementParts: IntroducingStatementParts = {
+export function getPartsOfIntroducingStatement(statementTextCharacters: string[]): IntroducingPhraseParts {
+    const statementParts: IntroducingPhraseParts = {
         head: [],
         body: [],
     };

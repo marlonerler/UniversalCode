@@ -1,7 +1,7 @@
-language sh
+language sh.
 
 # this is a comment
-import SomeModule
-module SomeOtherModule
+import SomeModule.
+module SomeOtherModule.
 
-Main section
+Main section.
