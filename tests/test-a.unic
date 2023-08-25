@@ -1,12 +1,8 @@
-rename# 
-	greet: greetPersonByNameAndAge.
-	name: nameOfperson.
-end# 
+# this is a comment
 
-function greet: string name, number age; returning string:
-     string greeting = 'Hello, $name!'   .
-     return greeting.
+function greetByName: string name, number age; returning string: 
+    declare string: greetingString = 'Hello, $name!'.
+    return string.
 end fn.
 
-'this string contains a "quotation mark'
-"this safe string contains a 'single quotation mark"
+This is opening: this is closing.

@@ -2,15 +2,10 @@
 
 // FUNCTION
 export interface ParseResult {
-    lines: Phrase[];
+    statements: Statement[];
     errors: string[];
     warnings: string[];
     notes: string[];
-}
-
-export interface StringExtractionResult {
-    codeWithoutStrings: string;
-    strings: String[];
 }
 
 // OTHER
@@ -26,30 +21,51 @@ export interface Import {
     sourceName: string;
 }
 
-export interface Statement {
-    statementType: string;
-    /** Data, depending on lineType. */
-    data: {[key: string]: string};
-}
-
 export interface Phrase {
-    rawText: string;
+    rawTextCharacters: string[];
     /** Determined by ending symbol (. or :). */
-    endMarker: PhraseEndMarkers;
+    type: PhraseType;
 }
 
 /** Types of a statement:
  * closed: ending with a period, final.
  * open: ending with a colon, not the end of a block.
  */
-export type PhraseEndMarkers = 
-	'final-centence-end-marker' | 
-	'opening-sentence-end-marker' | 
-	'continuous-marker' | 
-	'separating-marker' | 
-	'assignment-marker' | 
-	'normal-string-marker' | 
-	'safe-string-marker';
+export type PhraseType =
+    'closing' |
+    'introducing' |
+    
+    'continuing' |
+    'separating' |
+
+    'assignment-key' |
+
+    'normal-string' |
+    'safe-string' |
+
+    'comment';
+
+
+export interface Statement {
+    statementType: string;
+    /** Data, depending on lineType. */
+    data: { [key: string]: string };
+}
+export interface IntroducingStatementParts {
+    head: string[];
+    body: string[];
+}
+
+export type ScopeType = 
+    'function-head' |
+    'function-body' |
+
+    'variable-declaration' |
+
+    'control-flow-body' |
+
+    'switch-body' |
+    'case-body';
 
 export interface Variable {
     name: string;

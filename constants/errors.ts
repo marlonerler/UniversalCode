@@ -1,1 +1,2 @@
-export const ERR_NO_STATEMENT_TYPE = (characterIndex: number) => `Unknown error: could not determine type of statement (character at index ${characterIndex})`;
+export const ERROR_NO_PHRASE_TYPE = (characterIndex: number) => `Could not determine type of phrase (character at index ${characterIndex})`;
+export const ERROR_NO_RECOGNITION = (characteIndex: number) => `Could not recognize role of character at position ${characteIndex}`;

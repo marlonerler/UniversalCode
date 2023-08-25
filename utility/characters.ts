@@ -4,7 +4,7 @@ export function checkIfCharacterIsSpace(character: string): boolean {
     return character == ' ' || character == '\t';
 }
 
-export function removeOuterSpacesFromString(stringToClean: string): string {
+export function removeOuterSpacesFromCharacterArray(characterArray: string[]): string[] {
     let didRemoveAllLeadingSpaces: boolean = false;
     let didRemoveAllTrailingSpaces: boolean = false;
 
@@ -12,11 +12,11 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
     const cleanedStringCharacters: string[] = [];
 
     //collect indices of outer spaces
-    for (let indexFromStart: number = 0; indexFromStart < stringToClean.length; indexFromStart++) {
-        let indexFromEnd: number = stringToClean.length - 1 - indexFromStart;
+    for (let indexFromStart: number = 0; indexFromStart < characterArray.length; indexFromStart++) {
+        let indexFromEnd: number = characterArray.length - 1 - indexFromStart;
 
         if (didRemoveAllLeadingSpaces == false) {
-            const currentLeadingCharacter: string = stringToClean[indexFromStart];
+            const currentLeadingCharacter: string = characterArray[indexFromStart];
             if (checkIfCharacterIsSpace(currentLeadingCharacter) == false) {
                 didRemoveAllLeadingSpaces = true;
                 continue;
@@ -25,7 +25,7 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
             indicesOfCharactersToRemove.add(indexFromStart);
         }
         if (didRemoveAllTrailingSpaces == false) {
-            const currentTrailingCharacter: string = stringToClean[indexFromEnd];
+            const currentTrailingCharacter: string = characterArray[indexFromEnd];
             if (checkIfCharacterIsSpace(currentTrailingCharacter) == false) {
                 didRemoveAllTrailingSpaces = true;
                 continue;
@@ -40,12 +40,11 @@ export function removeOuterSpacesFromString(stringToClean: string): string {
     }
 
     // rebuild string without outer spaces
-    for (let i = 0; i < stringToClean.length; i++) {
+    for (let i = 0; i < characterArray.length; i++) {
         if (indicesOfCharactersToRemove.has(i) == true) continue;
 
-        cleanedStringCharacters.push(stringToClean[i]);
+        cleanedStringCharacters.push(characterArray[i]);
     }
 
-    const cleanedString = cleanedStringCharacters.join('');
-    return cleanedString;
+    return cleanedStringCharacters;
 }

@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeOuterSpacesFromString = exports.checkIfCharacterIsSpace = void 0;
+exports.removeOuterSpacesFromCharacterArray = exports.checkIfCharacterIsSpace = void 0;
 function checkIfCharacterIsSpace(character) {
     return character == ' ' || character == '\t';
 }
 exports.checkIfCharacterIsSpace = checkIfCharacterIsSpace;
-function removeOuterSpacesFromString(stringToClean) {
+function removeOuterSpacesFromCharacterArray(characterArray) {
     let didRemoveAllLeadingSpaces = false;
     let didRemoveAllTrailingSpaces = false;
     const indicesOfCharactersToRemove = new Set();
     const cleanedStringCharacters = [];
     //collect indices of outer spaces
-    for (let indexFromStart = 0; indexFromStart < stringToClean.length; indexFromStart++) {
-        let indexFromEnd = stringToClean.length - 1 - indexFromStart;
+    for (let indexFromStart = 0; indexFromStart < characterArray.length; indexFromStart++) {
+        let indexFromEnd = characterArray.length - 1 - indexFromStart;
         if (didRemoveAllLeadingSpaces == false) {
-            const currentLeadingCharacter = stringToClean[indexFromStart];
+            const currentLeadingCharacter = characterArray[indexFromStart];
             if (checkIfCharacterIsSpace(currentLeadingCharacter) == false) {
                 didRemoveAllLeadingSpaces = true;
                 continue;
@@ -24,7 +24,7 @@ function removeOuterSpacesFromString(stringToClean) {
             indicesOfCharactersToRemove.add(indexFromStart);
         }
         if (didRemoveAllTrailingSpaces == false) {
-            const currentTrailingCharacter = stringToClean[indexFromEnd];
+            const currentTrailingCharacter = characterArray[indexFromEnd];
             if (checkIfCharacterIsSpace(currentTrailingCharacter) == false) {
                 didRemoveAllTrailingSpaces = true;
                 continue;
@@ -37,12 +37,11 @@ function removeOuterSpacesFromString(stringToClean) {
         }
     }
     // rebuild string without outer spaces
-    for (let i = 0; i < stringToClean.length; i++) {
+    for (let i = 0; i < characterArray.length; i++) {
         if (indicesOfCharactersToRemove.has(i) == true)
             continue;
-        cleanedStringCharacters.push(stringToClean[i]);
+        cleanedStringCharacters.push(characterArray[i]);
     }
-    const cleanedString = cleanedStringCharacters.join('');
-    return cleanedString;
+    return cleanedStringCharacters;
 }
-exports.removeOuterSpacesFromString = removeOuterSpacesFromString;
+exports.removeOuterSpacesFromCharacterArray = removeOuterSpacesFromCharacterArray;
