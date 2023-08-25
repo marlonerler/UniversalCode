@@ -1,1 +1,5 @@
 # this is a comment
+
+language sh.
+
+declare boolean: myBoolean = false.

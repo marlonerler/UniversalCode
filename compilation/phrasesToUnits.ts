@@ -65,6 +65,10 @@ function closeCurrentUnit(indexOfCurrentPhrase: number): void {
 // recognition
 type phraseRecognitionFunction = (indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]) => boolean;
 
+function recognizeBoolean(indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]): boolean {
+    
+}
+
 function recognizeComment(indexOfCurrentPhrase: number, phraseType: PhraseType, characters: string[]): boolean {
     if (phraseType != 'comment') return false;
 
