@@ -103,16 +103,14 @@ export type Unit =
           name: string;
           value: Unit | undefined;
       }
-
     | {
           type: 'command-head';
       }
     | {
-        type: 'rename-command';
-        oldName: string | undefined;
-        newName: string | undefined;
-    }
-
+          type: 'rename-command';
+          oldName: string | undefined;
+          newName: string | undefined;
+      }
     | {
           type: 'function-head';
           returnType: string;
@@ -180,11 +178,15 @@ export type Unit =
       };
 
 export type ScopeType =
-    | 'function-body'
+    | 'case-body'
     | 'control-flow-body'
     | 'command-body'
+    | 'if-block-body'
+    | 'interface-body'
+    | 'for-loop-body'
+    | 'function-body'
     | 'switch-body'
-    | 'case-body';
+    | 'while-loop-body';
 
 export interface Variable {
     name: string;

@@ -61,6 +61,7 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeCommandHead,
             recognizeCommands,
 
+            recognizeEndMarkers,
             recognizeGenericUnit,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
@@ -78,10 +79,6 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
 
 // HELPERS
 // general
-function getCurrentScopeType(): ScopeType {
-    return scopes[scopes.length - 1];
-}
-
 function closeCurrentUnit(): void {
     if (currentUnit == undefined) {
         throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentPhrase);
@@ -89,6 +86,10 @@ function closeCurrentUnit(): void {
 
     units.push(currentUnit);
     currentUnit = undefined;
+}
+
+function getCurrentScopeType(): ScopeType {
+    return scopes[scopes.length - 1];
 }
 
 // values
@@ -112,6 +113,7 @@ function processGenericUnitForCommand(): boolean {
     switch (currentUnit.type) {
         case 'rename-command': {
             currentUnit.oldName = phraseText;
+            closeCurrentUnit();
             return true;
         }
     }
@@ -228,6 +230,37 @@ function recognizeComment(): boolean {
     currentUnit = {
         type: 'comment',
         content: phraseCharacters.join(''),
+    };
+    closeCurrentUnit();
+
+    return true;
+}
+
+function recognizeEndMarkers(): boolean {
+    const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+    const headString: string = phraseParts.head.join('');
+
+    if (headString != 'end') return false;
+
+    const bodyText: string = phraseParts.body.join('');
+
+    const endingScopes: { [key: string]: ScopeType } = {
+        case: 'case-body',
+        cmd: 'command-body',
+        fn: 'function-body',
+        for: 'for-loop-body',
+        if: 'if-block-body',
+        ifc: 'interface-body',
+        switch: 'switch-body',
+        while: 'while-loop-body',
+    };
+
+    const endingScope: ScopeType | undefined = endingScopes[bodyText];
+    if (endingScope == undefined) return false;
+
+    currentUnit = {
+        type: 'end-marker',
+        endingScope,
     };
     closeCurrentUnit();
 
