@@ -188,6 +188,16 @@ export type ScopeType =
     | 'switch-body'
     | 'while-loop-body';
 
+export const ScopesWithFunctionGrammar: ScopeType[] = [
+    'case-body',
+    'control-flow-body',
+    'if-block-body',
+    'for-loop-body',
+    'function-body',
+    'switch-body',
+    'while-loop-body',
+];
+
 export interface Variable {
     name: string;
     type: string;

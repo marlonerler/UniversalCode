@@ -6,6 +6,7 @@ import {
     Phrase,
     PhraseType,
     ScopeType,
+    ScopesWithFunctionGrammar,
     Unit,
 } from '../types/parser';
 import { getHeadAndBody, getValueOfBooleanString } from '../utility/parser';
@@ -86,6 +87,11 @@ function closeCurrentUnit(): void {
 
     units.push(currentUnit);
     currentUnit = undefined;
+}
+
+function checkIfScopeUsesFunctionGrammar(): boolean {
+    const scope: ScopeType = getCurrentScopeType();
+    return ScopesWithFunctionGrammar.indexOf(scope) > -1;
 }
 
 function getCurrentScopeType(): ScopeType {
@@ -172,7 +178,7 @@ function recognizeAssignment(): boolean {
 }
 
 function recognizeBoolean(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -189,7 +195,7 @@ function recognizeBoolean(): boolean {
 }
 
 function recognizeCommandHead(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'opening') return false;
 
     const phraseText = phraseCharacters.join('');
@@ -224,7 +230,7 @@ function recognizeCommands(): boolean {
 }
 
 function recognizeComment(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'comment') return false;
 
     currentUnit = {
@@ -268,7 +274,7 @@ function recognizeEndMarkers(): boolean {
 }
 
 function recognizeFalsyValues(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -288,7 +294,7 @@ function recognizeFalsyValues(): boolean {
 }
 
 function recognizeIntegerOrFloat(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseText: string = phraseCharacters.join('');
@@ -311,7 +317,7 @@ function recognizeIntegerOrFloat(): boolean {
 }
 
 function recognizeMultiwordPhraseUnit(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'closing') return false;
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
@@ -361,7 +367,7 @@ function recognizeMultiwordPhraseUnit(): boolean {
 }
 
 function recognizeString(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'safe-string' && phraseType != 'normal-string')
         return false;
 
@@ -375,7 +381,7 @@ function recognizeString(): boolean {
 }
 
 function recognizeVariableDeclaration(): boolean {
-    if (getCurrentScopeType() != 'function-body') return false;
+    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (phraseType != 'opening') return false;
 
     const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
