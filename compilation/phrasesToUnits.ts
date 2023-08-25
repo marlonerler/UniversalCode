@@ -103,7 +103,7 @@ function processUnitWithValueForAssignment(draftedUnit: Unit): void {
     if (
         currentUnit == undefined ||
         (currentUnit.type != 'assignment' &&
-            currentUnit.type != 'variable-declatation')
+            currentUnit.type != 'variable-declatarion')
     )
         return;
 
@@ -133,7 +133,7 @@ function processAssignmentForFunctionBody(): boolean {
 
     if (
         currentUnit != undefined &&
-        currentUnit.type == 'variable-declatation'
+        currentUnit.type == 'variable-declatarion'
     ) {
         currentUnit.name = phraseText;
     } else {
@@ -392,7 +392,7 @@ function recognizeVariableDeclaration(): boolean {
     const dataType: string = phraseParts.body.join('');
 
     currentUnit = {
-        type: 'variable-declatation',
+        type: 'variable-declatarion',
         isMutable: headString == 'mutable',
         dataType,
         name: '',

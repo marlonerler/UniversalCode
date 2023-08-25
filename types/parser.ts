@@ -97,7 +97,7 @@ export type Unit =
           value: Unit | undefined;
       }
     | {
-          type: 'variable-declatation';
+          type: 'variable-declatarion';
           isMutable: boolean;
           dataType: string;
           name: string;
