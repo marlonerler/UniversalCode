@@ -49,7 +49,7 @@ export function getPhrasesFromCode(code: string): Phrase[] {
         leadingCharacter = code[indexOfCurrentCharacter - 1];
 
         let couldClassifyCharacter: boolean = false;
-        const parseProcedure: characterRecognitionFunction[] = [
+        const parseProcedure: CharacterRecognitionFunction[] = [
             recognizeString,
             recognizeComment,
             recognizeSentence,
@@ -58,7 +58,7 @@ export function getPhrasesFromCode(code: string): Phrase[] {
             recognizeOther,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
-            const functionToRun: characterRecognitionFunction =
+            const functionToRun: CharacterRecognitionFunction =
                 parseProcedure[j];
             couldClassifyCharacter = functionToRun();
             if (couldClassifyCharacter == true) break;
@@ -109,7 +109,7 @@ function resetCurrentPhrase(): void {
 }
 
 // recognition
-type characterRecognitionFunction = () => boolean;
+type CharacterRecognitionFunction = () => boolean;
 
 function recognizeAssignment(): boolean {
     if (character != '=') return false;

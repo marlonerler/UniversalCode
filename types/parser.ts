@@ -205,7 +205,7 @@ export type ScopeType =
     | 'object-body'
     | 'switch-body';
 
-export const ScopesWithFunctionGrammar: ScopeType[] = [
+export const scopesWithFunctionGrammar: ScopeType[] = [
     'case-body',
     'control-flow-body',
     'if-block-body',
