@@ -251,6 +251,15 @@ function processOpeningMultiwordUnit(
             scopes.push('loop-body');
             break;
         }
+        case 'while': {
+            currentUnit = {
+                type: 'while-loop-head',
+                condition: bodyString,
+            };
+            closeCurrentUnit();
+            scopes.push('loop-body');
+            break;
+        }
         default: {
             return false;
         }
