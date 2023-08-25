@@ -75,7 +75,8 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             catchOtherPhrases,
         ];
         for (let j = 0; j < reognitionFunctions.length; j++) {
-            const functionToRun: PhraseRecognitionFunction = reognitionFunctions[j];
+            const functionToRun: PhraseRecognitionFunction =
+                reognitionFunctions[j];
             didRecognizePhrase = functionToRun();
             if (didRecognizePhrase == true) break;
         }
@@ -188,6 +189,14 @@ function processOpeningMultiwordUnit(
     bodyString: string,
 ): boolean {
     switch (headString) {
+        case 'call': {
+            currentUnit = {
+                type: 'function-call-start',
+                functionName: bodyString,
+            };
+            scopes.push('function-call');
+            break;
+        }
         case 'function': {
             currentUnit = {
                 type: 'function-head',
@@ -494,7 +503,10 @@ function recognizeMultiwordPhraseUnit(): boolean {
 
 function recognizeString(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentPhraseType != 'safe-string' && currentPhraseType != 'normal-string')
+    if (
+        currentPhraseType != 'safe-string' &&
+        currentPhraseType != 'normal-string'
+    )
         return false;
 
     currentUnit = {
@@ -563,6 +575,14 @@ function catchOtherPhrases(): boolean {
 
                 trailingUnit = {
                     type: 'object-end',
+                };
+                break;
+            }
+            case 'function-call': {
+                scopes.pop();
+
+                trailingUnit = {
+                    type: 'function-call-end',
                 };
                 break;
             }

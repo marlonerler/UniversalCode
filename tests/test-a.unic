@@ -22,6 +22,6 @@ function greetPerson: string name, returns string:
 end fn;
 
 each people, take person:
-    constant string: greetingString = [greetPerson person.name];
-    [console.log greetingString];
+    constant string: greetingString = call greetPerson: person.name;
+    call console.log: greetingString;
 end loop;

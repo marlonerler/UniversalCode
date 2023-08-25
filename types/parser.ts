@@ -142,6 +142,13 @@ export type Unit =
           returnType: string;
       }
     | {
+          type: 'function-call-start';
+          functionName: string;
+      }
+    | {
+          type: 'function-call-end';
+      }
+    | {
           type: 'return-statement';
       }
     | {
@@ -200,6 +207,7 @@ export type ScopeType =
     | 'command-body'
     | 'if-block-body'
     | 'interface-body'
+    | 'function-call'
     | 'function-body'
     | 'loop-body'
     | 'object-body'
