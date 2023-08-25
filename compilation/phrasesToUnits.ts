@@ -267,6 +267,14 @@ function processOpeningMultiwordUnit(
             scopes.push('loop-body');
             break;
         }
+        case 'type': {
+            currentUnit = {
+                type: 'type-definition',
+                name: bodyString,
+                typeReferences: [],
+            };
+            break;
+        }
         case 'while': {
             currentUnit = {
                 type: 'while-loop-head',
@@ -568,20 +576,31 @@ function recognizeVariableDeclaration(): boolean {
 function recognizeGenericUnit(): boolean {
     if (getCurrentScopeType() == 'command-body') {
         return processGenericUnitForCommand();
-    } else if (
-        currentUnit != undefined &&
-        currentUnit.type == 'function-head'
-    ) {
-        // function parameter
-        const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
-        const parameter: Extract<Unit, { type: 'function-parameter' }> = {
-            type: 'function-parameter',
-            dataType: phraseParts.head.join(''),
-            name: phraseParts.body.join(''),
-        };
-        currentUnit.parameters.push(parameter);
-        return true;
+    } else if (currentUnit == undefined) return false;
+
+    switch (currentUnit.type) {
+        case 'function-head': {
+            // function parameter
+            const phraseParts: HeadAndBody = getHeadAndBody(phraseCharacters);
+            const parameter: Extract<Unit, { type: 'function-parameter' }> = {
+                type: 'function-parameter',
+                dataType: phraseParts.head.join(''),
+                name: phraseParts.body.join(''),
+            };
+            currentUnit.parameters.push(parameter);
+            break;
+        }
+        case 'type-definition': {
+            currentUnit.typeReferences.push(phraseCharacters.join(''));
+            if (phraseType == 'closing') {
+                closeCurrentUnit();
+            }
+            break;
+        }
+        default: {
+            return false;
+        }
     }
 
-    return false;
+    return true;
 }

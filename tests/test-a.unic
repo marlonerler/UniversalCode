@@ -1,4 +1,1 @@
-interface Person:
-    string name,
-    int age,
-end ifc;
+type myType: string, number;
