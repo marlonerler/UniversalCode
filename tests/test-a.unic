@@ -1,5 +1,2 @@
-language sh;
-module MyModule;
-section Main;
-
-constant string: myString = 'Hello, world!';
+command:
+    rename: newName = oldName;
