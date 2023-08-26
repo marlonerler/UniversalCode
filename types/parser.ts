@@ -248,7 +248,9 @@ export type Unit =
       }
     | {
           type: 'while-loop-head';
-          condition: string;
+      }
+    | {
+          type: 'while-body-start';
       }
     | {
           type: 'loop-iterator-name-definition';

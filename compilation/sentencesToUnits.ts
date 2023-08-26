@@ -169,7 +169,6 @@ function processClosingMultiwordUnit(
                 returnType: currentSentenceBody,
             };
 
-            scopes.push('function-body');
             break;
         }
         case 'section': {
@@ -306,15 +305,6 @@ function processOpeningMultiwordUnit(
                 name: currentSentenceBody,
             };
             scopes.push('type-definition');
-            break;
-        }
-        case 'while': {
-            currentUnit = {
-                type: 'while-loop-head',
-                condition: currentSentenceBody,
-            };
-
-            scopes.push('loop-body');
             break;
         }
         default: {
@@ -675,6 +665,13 @@ function recognizeOpeningKeywords(): boolean {
 
     const sentenceText = currentSentenceCharacters.join('');
     switch (sentenceText) {
+        case 'do': {
+            currentUnit = {
+                type: 'while-body-start',
+            };
+
+            break;
+        }
         case 'else': {
             currentUnit = {
                 type: 'else-head',
@@ -727,6 +724,13 @@ function recognizeOpeningKeywords(): boolean {
         case 'then': {
             currentUnit = {
                 type: 'if-body-start',
+            };
+
+            break;
+        }
+        case 'while': {
+            currentUnit = {
+                type: 'while-loop-head',
             };
 
             break;
