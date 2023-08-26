@@ -23,13 +23,13 @@ export interface Import {
 
 export type LoopType = 'index' | 'item' | 'count';
 
-export interface Phrase {
+export interface Sentence {
     rawTextCharacters: string[];
     /** Determined by ending symbol (. or :). */
-    type: PhraseType;
+    type: SentenceType;
 }
 
-export type PhraseType =
+export type SentenceType =
     | 'closing'
     | 'opening'
     | 'enumerating'
@@ -221,10 +221,3 @@ export const scopesWithFunctionGrammar: ScopeType[] = [
     'function-body',
     'switch-body',
 ];
-
-export interface Variable {
-    name: string;
-    type: string;
-    phraseOfValue: Phrase;
-    lineNumber: string;
-}

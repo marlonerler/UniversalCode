@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { ERROR_NO_PHRASE_RECOGNITION } from '../constants/errors';
+import { ERROR_NO_SENTENCE_RECOGNITION } from '../constants/errors';
 import {
     HeadAndBody,
     LoopType,
-    Phrase,
-    PhraseType,
+    Sentence,
+    SentenceType,
     ScopeType,
     scopesWithFunctionGrammar,
     Unit,
@@ -23,34 +23,34 @@ let trailingUnit: Unit | undefined;
 let scopes: ScopeType[];
 
 // track loop
-let indexOfCurrentPhrase: number = 0;
-let currentPhrase: Phrase | undefined;
-let currentPhraseType: PhraseType | undefined;
-let currentPhraseCharacters: string[] = [];
+let indexOfCurrentSentence: number = 0;
+let currentSentence: Sentence | undefined;
+let currentSentenceType: SentenceType | undefined;
+let currentSentenceCharacters: string[] = [];
 
 // MAIN
-export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
+export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
     units = [];
 
     // first level is same grammar as function body
     scopes = ['function-body'];
 
     for (
-        indexOfCurrentPhrase = 0;
-        indexOfCurrentPhrase < phrases.length;
-        indexOfCurrentPhrase++
+        indexOfCurrentSentence = 0;
+        indexOfCurrentSentence < sentences.length;
+        indexOfCurrentSentence++
     ) {
         // units
         currentUnit = undefined;
         trailingUnit = undefined;
 
-        // phrases
-        currentPhrase = phrases[indexOfCurrentPhrase];
-        currentPhraseType = currentPhrase.type;
-        currentPhraseCharacters = currentPhrase.rawTextCharacters;
+        // sentences
+        currentSentence = sentences[indexOfCurrentSentence];
+        currentSentenceType = currentSentence.type;
+        currentSentenceCharacters = currentSentence.rawTextCharacters;
 
-        let didRecognizePhrase: boolean = false;
-        const reognitionFunctions: PhraseRecognitionFunction[] = [
+        let didRecognizeSentence: boolean = false;
+        const reognitionFunctions: SentenceRecognitionFunction[] = [
             recognizeComment,
 
             recognizeBoolean,
@@ -59,7 +59,7 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeString,
             recognizeCompoundDataTypes,
 
-            recognizeMultiwordPhraseUnit,
+            recognizeMultiwordUnit,
 
             recognizeVariableDeclaration,
             recognizeAssignment,
@@ -72,18 +72,18 @@ export function getUnitsFromPhrases(phrases: Phrase[]): Unit[] {
             recognizeEndMarkers,
             recognizeTwoWordCluster,
 
-            catchOtherPhrases,
+            catchOther,
         ];
         for (let j = 0; j < reognitionFunctions.length; j++) {
-            const functionToRun: PhraseRecognitionFunction =
+            const functionToRun: SentenceRecognitionFunction =
                 reognitionFunctions[j];
-            didRecognizePhrase = functionToRun();
-            if (didRecognizePhrase == true) break;
+            didRecognizeSentence = functionToRun();
+            if (didRecognizeSentence == true) break;
         }
-        if (didRecognizePhrase == false) {
+        if (didRecognizeSentence == false) {
             currentUnit = {
                 type: 'unknown',
-                text: currentPhraseCharacters.join(''),
+                text: currentSentenceCharacters.join(''),
             };
         }
         if (currentUnit != undefined) {
@@ -110,7 +110,7 @@ function getCurrentScopeType(): ScopeType {
 
 // multiword
 function processClosingMultiwordUnit(
-    phraseParts: HeadAndBody,
+    sentenceParts: HeadAndBody,
     headString: string,
     bodyString: string,
 ): boolean {
@@ -118,28 +118,28 @@ function processClosingMultiwordUnit(
         case 'import': {
             currentUnit = {
                 type: 'import',
-                sourceName: phraseParts.body.join(''),
+                sourceName: sentenceParts.body.join(''),
             };
             break;
         }
         case 'language': {
             currentUnit = {
                 type: 'language-definition',
-                targetLanguage: phraseParts.body.join(''),
+                targetLanguage: sentenceParts.body.join(''),
             };
             break;
         }
         case 'module': {
             currentUnit = {
                 type: 'module-name-definition',
-                moduleName: phraseParts.body.join(''),
+                moduleName: sentenceParts.body.join(''),
             };
             break;
         }
         case 'section': {
             currentUnit = {
                 type: 'section-marker',
-                sectionName: phraseParts.body.join(''),
+                sectionName: sentenceParts.body.join(''),
             };
             break;
         }
@@ -152,7 +152,7 @@ function processClosingMultiwordUnit(
 }
 
 function processEnumeratingMultiwordUnit(
-    phraseParts: HeadAndBody,
+    sentenceParts: HeadAndBody,
     headString: string,
     bodyString: string,
 ): boolean {
@@ -184,7 +184,7 @@ function processEnumeratingMultiwordUnit(
 }
 
 function processOpeningMultiwordUnit(
-    phraseParts: HeadAndBody,
+    sentenceParts: HeadAndBody,
     headString: string,
     bodyString: string,
 ): boolean {
@@ -293,27 +293,27 @@ function processOpeningMultiwordUnit(
 }
 
 // recognition
-type PhraseRecognitionFunction = () => boolean;
+type SentenceRecognitionFunction = () => boolean;
 
 function recognizeAssignment(): boolean {
-    if (currentPhraseType != 'assignment-key') return false;
+    if (currentSentenceType != 'assignment-key') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
+    const sentenceText: string = currentSentenceCharacters.join('');
 
     currentUnit = {
         type: 'assignment',
-        key: phraseText,
+        key: sentenceText,
     };
 
     return true;
 }
 
 function recognizeBoolean(): boolean {
-    if (currentPhraseType != 'closing') return false;
+    if (currentSentenceType != 'closing') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
-    if (phraseText != 'true' && phraseText != 'false') return false;
-    const booleanValue: 0 | 1 = getValueOfBooleanString(phraseText);
+    const sentenceText: string = currentSentenceCharacters.join('');
+    if (sentenceText != 'true' && sentenceText != 'false') return false;
+    const booleanValue: 0 | 1 = getValueOfBooleanString(sentenceText);
 
     currentUnit = {
         type: 'boolean',
@@ -325,10 +325,10 @@ function recognizeBoolean(): boolean {
 
 function recognizeCommandHead(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentPhraseType != 'opening') return false;
+    if (currentSentenceType != 'opening') return false;
 
-    const phraseText = currentPhraseCharacters.join('');
-    if (phraseText != 'command') return false;
+    const sentencceText = currentSentenceCharacters.join('');
+    if (sentencceText != 'command') return false;
 
     currentUnit = {
         type: 'command-head',
@@ -340,13 +340,13 @@ function recognizeCommandHead(): boolean {
 
 function recognizeCommands(): boolean {
     if (getCurrentScopeType() != 'command-body') return false;
-    if (currentPhraseType != 'opening') return false;
+    if (currentSentenceType != 'opening') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
+    const sentenceText: string = currentSentenceCharacters.join('');
 
     currentUnit = {
         type: 'command',
-        commandName: phraseText,
+        commandName: sentenceText,
     };
 
     return true;
@@ -354,22 +354,22 @@ function recognizeCommands(): boolean {
 
 function recognizeComment(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentPhraseType != 'comment') return false;
+    if (currentSentenceType != 'comment') return false;
 
     currentUnit = {
         type: 'comment',
-        content: currentPhraseCharacters.join(''),
+        content: currentSentenceCharacters.join(''),
     };
 
     return true;
 }
 
 function recognizeCompoundDataTypes(): boolean {
-    if (currentPhraseType != 'opening') return false;
+    if (currentSentenceType != 'opening') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
+    const sentenceText: string = currentSentenceCharacters.join('');
 
-    switch (phraseText) {
+    switch (sentenceText) {
         case 'array': {
             currentUnit = {
                 type: 'array-start',
@@ -393,12 +393,12 @@ function recognizeCompoundDataTypes(): boolean {
 }
 
 function recognizeEndMarkers(): boolean {
-    const phraseParts: HeadAndBody = getHeadAndBody(currentPhraseCharacters);
-    const headString: string = phraseParts.head.join('');
+    const sentenceParts: HeadAndBody = getHeadAndBody(currentSentenceCharacters);
+    const headString: string = sentenceParts.head.join('');
 
     if (headString != 'end') return false;
 
-    const bodyText: string = phraseParts.body.join('');
+    const bodyText: string = sentenceParts.body.join('');
 
     const endingScopes: { [key: string]: ScopeType } = {
         case: 'case-body',
@@ -424,29 +424,29 @@ function recognizeEndMarkers(): boolean {
 }
 
 function recognizeFalsyValues(): boolean {
-    if (currentPhraseType != 'closing') return false;
+    if (currentSentenceType != 'closing') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
+    const sentenceText: string = currentSentenceCharacters.join('');
     if (
-        phraseText != 'undefined' &&
-        phraseText != 'null' &&
-        phraseText != 'NaN' &&
-        phraseText != 'void'
+        sentenceText != 'undefined' &&
+        sentenceText != 'null' &&
+        sentenceText != 'NaN' &&
+        sentenceText != 'void'
     )
         return false;
 
     currentUnit = {
-        type: phraseText,
+        type: sentenceText,
     };
 
     return true;
 }
 
 function recognizeIntegerOrFloat(): boolean {
-    if (currentPhraseType != 'closing') return false;
+    if (currentSentenceType != 'closing') return false;
 
-    const phraseText: string = currentPhraseCharacters.join('');
-    const parsedNumber: number = parseFloat(phraseText);
+    const sentenceText: string = currentSentenceCharacters.join('');
+    const parsedNumber: number = parseFloat(sentenceText);
 
     if (isNaN(parsedNumber) == true) return false;
 
@@ -465,11 +465,11 @@ function recognizeIntegerOrFloat(): boolean {
 
 function recognizeFunctionDefinition(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentPhraseType != 'opening') return false;
+    if (currentSentenceType != 'opening') return false;
 
-    const phraseParts: HeadAndBody = getHeadAndBody(currentPhraseCharacters);
-    const headString: string = phraseParts.head.join('');
-    const bodyString: string = phraseParts.body.join('');
+    const sentenceParts: HeadAndBody = getHeadAndBody(currentSentenceCharacters);
+    const headString: string = sentenceParts.head.join('');
+    const bodyString: string = sentenceParts.body.join('');
 
     if (headString != 'function') return false;
 
@@ -481,18 +481,18 @@ function recognizeFunctionDefinition(): boolean {
     return true;
 }
 
-function recognizeMultiwordPhraseUnit(): boolean {
-    const phraseParts: HeadAndBody = getHeadAndBody(currentPhraseCharacters);
-    const headString: string = phraseParts.head.join('');
-    const bodyString = phraseParts.body.join('');
+function recognizeMultiwordUnit(): boolean {
+    const sentenceParts: HeadAndBody = getHeadAndBody(currentSentenceCharacters);
+    const headString: string = sentenceParts.head.join('');
+    const bodyString = sentenceParts.body.join('');
 
-    if (currentPhraseType == 'closing') {
-        return processClosingMultiwordUnit(phraseParts, headString, bodyString);
-    } else if (currentPhraseType == 'opening') {
-        return processOpeningMultiwordUnit(phraseParts, headString, bodyString);
-    } else if (currentPhraseType == 'enumerating') {
+    if (currentSentenceType == 'closing') {
+        return processClosingMultiwordUnit(sentenceParts, headString, bodyString);
+    } else if (currentSentenceType == 'opening') {
+        return processOpeningMultiwordUnit(sentenceParts, headString, bodyString);
+    } else if (currentSentenceType == 'enumerating') {
         return processEnumeratingMultiwordUnit(
-            phraseParts,
+            sentenceParts,
             headString,
             bodyString,
         );
@@ -504,31 +504,31 @@ function recognizeMultiwordPhraseUnit(): boolean {
 function recognizeString(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (
-        currentPhraseType != 'safe-string' &&
-        currentPhraseType != 'normal-string'
+        currentSentenceType != 'safe-string' &&
+        currentSentenceType != 'normal-string'
     )
         return false;
 
     currentUnit = {
-        type: currentPhraseType,
-        content: currentPhraseCharacters.join(''),
+        type: currentSentenceType,
+        content: currentSentenceCharacters.join(''),
     };
 
     return true;
 }
 
 function recognizeTwoWordCluster(): boolean {
-    const phraseParts: HeadAndBody = getHeadAndBody(currentPhraseCharacters);
-    if (phraseParts.body.length == 0) return false;
+    const sentenceParts: HeadAndBody = getHeadAndBody(currentSentenceCharacters);
+    if (sentenceParts.body.length == 0) return false;
 
-    const headString: string = phraseParts.head.join('');
+    const headString: string = sentenceParts.head.join('');
 
     // body must contain no space
-    for (let i: number = 0; i < phraseParts.body.length; i++) {
-        if (phraseParts.body[i] == ' ') return false;
+    for (let i: number = 0; i < sentenceParts.body.length; i++) {
+        if (sentenceParts.body[i] == ' ') return false;
     }
 
-    const bodyString = phraseParts.body.join('');
+    const bodyString = sentenceParts.body.join('');
 
     currentUnit = {
         type: 'two-word-cluster',
@@ -541,14 +541,14 @@ function recognizeTwoWordCluster(): boolean {
 
 function recognizeVariableDeclaration(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentPhraseType != 'opening') return false;
+    if (currentSentenceType != 'opening') return false;
 
-    const phraseParts: HeadAndBody = getHeadAndBody(currentPhraseCharacters);
-    const headString: string = phraseParts.head.join('');
+    const sentenceParts: HeadAndBody = getHeadAndBody(currentSentenceCharacters);
+    const headString: string = sentenceParts.head.join('');
 
     if (headString != 'constant' && headString != 'mutable') return false;
 
-    const dataType: string = phraseParts.body.join('');
+    const dataType: string = sentenceParts.body.join('');
 
     currentUnit = {
         type: 'variable-declatarion',
@@ -559,8 +559,8 @@ function recognizeVariableDeclaration(): boolean {
     return true;
 }
 
-function catchOtherPhrases(): boolean {
-    if (currentPhraseType == 'closing') {
+function catchOther(): boolean {
+    if (currentSentenceType == 'closing') {
         switch (getCurrentScopeType()) {
             case 'array-body': {
                 scopes.pop();

@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 import {
-    ERROR_NO_PHRASE_RECOGNITION,
-    ERROR_NO_PHRASE_TYPE,
+    ERROR_NO_SENTENCE_RECOGNITION,
+    ERROR_NO_SENTENCE_TYPE,
 } from '../constants/errors';
-import { Phrase, PhraseType } from '../types/parser';
+import { Sentence, SentenceType } from '../types/parser';
 import {
     checkIfCharacterIsSpace,
     removeOuterSpacesFromCharacterArray,
 } from '../utility/characters';
 
 // DATA
-let phrases: Phrase[];
+let sentences: Sentence[];
 
-// current phrase
-let charactersOfCurrentPhrase: string[];
-let phraseType: PhraseType | undefined;
+// current sentence
+let charactersOfCurrentSentence: string[];
+let currentSentenceType: SentenceType | undefined;
 
 // current scope/block
 let markerOfCurrentString: string | undefined;
@@ -27,12 +27,12 @@ let character: string = '';
 let leadingCharacter: string | undefined;
 
 // MAIN
-export function getPhrasesFromCode(code: string): Phrase[] {
-    phrases = [];
+export function getSentencesFromCode(code: string): Sentence[] {
+    sentences = [];
 
-    // current phrase
-    charactersOfCurrentPhrase = [];
-    phraseType = undefined;
+    // current sentence
+    charactersOfCurrentSentence = [];
+    currentSentenceType = undefined;
 
     // current scope/block
     markerOfCurrentString = undefined;
@@ -64,48 +64,46 @@ export function getPhrasesFromCode(code: string): Phrase[] {
             if (couldClassifyCharacter == true) break;
         }
         if (couldClassifyCharacter == false) {
-            throw ERROR_NO_PHRASE_RECOGNITION(indexOfCurrentCharacter);
+            throw ERROR_NO_SENTENCE_RECOGNITION(indexOfCurrentCharacter);
         }
 
         isEscaping = character == '\\' && leadingCharacter != '\\';
     }
 
-    return phrases;
+    return sentences;
 }
 
 // HELPERS
 // general
-function closeCurrentPhrase(
-    shouldCleanString: boolean,
-): void {
-    if (phraseType == undefined) {
-        throw ERROR_NO_PHRASE_TYPE(indexOfCurrentCharacter);
+function closeCurrentSentence(shouldCleanString: boolean): void {
+    if (currentSentenceType == undefined) {
+        throw ERROR_NO_SENTENCE_TYPE(indexOfCurrentCharacter);
     }
 
-    if (charactersOfCurrentPhrase.length == 0) {
-        //do not add empty phrases
-        resetCurrentPhrase();
+    if (charactersOfCurrentSentence.length == 0) {
+        //do not add empty sentences
+        resetCurrentSentence();
         return;
     }
 
     if (shouldCleanString == true) {
-        charactersOfCurrentPhrase = removeOuterSpacesFromCharacterArray(
-            charactersOfCurrentPhrase,
+        charactersOfCurrentSentence = removeOuterSpacesFromCharacterArray(
+            charactersOfCurrentSentence,
         );
     }
 
-    const newPhrase: Phrase = {
-        rawTextCharacters: charactersOfCurrentPhrase,
-        type: phraseType,
+    const newSentence: Sentence = {
+        rawTextCharacters: charactersOfCurrentSentence,
+        type: currentSentenceType,
     };
-    phrases.push(newPhrase);
+    sentences.push(newSentence);
 
-    resetCurrentPhrase();
+    resetCurrentSentence();
 }
 
-function resetCurrentPhrase(): void {
-    phraseType = undefined;
-    charactersOfCurrentPhrase = [];
+function resetCurrentSentence(): void {
+    currentSentenceType = undefined;
+    charactersOfCurrentSentence = [];
 }
 
 // recognition
@@ -114,8 +112,8 @@ type CharacterRecognitionFunction = () => boolean;
 function recognizeAssignment(): boolean {
     if (character != '=') return false;
 
-    phraseType = 'assignment-key';
-    closeCurrentPhrase(true);
+    currentSentenceType = 'assignment-key';
+    closeCurrentSentence(true);
 
     return true;
 }
@@ -123,17 +121,17 @@ function recognizeAssignment(): boolean {
 function recognizeComment(): boolean {
     if (isCurrentlyInsideComment == true) {
         if (character == '\n') {
-            phraseType = 'comment';
+            currentSentenceType = 'comment';
             isCurrentlyInsideComment = false;
-            closeCurrentPhrase(false);
+            closeCurrentSentence(false);
         } else {
-            charactersOfCurrentPhrase.push(character);
+            charactersOfCurrentSentence.push(character);
         }
 
         return true;
     } else if (character == '#') {
-        //delete start of previous phrase and start comment
-        resetCurrentPhrase();
+        //delete start of previous sentence and start comment
+        resetCurrentSentence();
         isCurrentlyInsideComment = true;
 
         return true;
@@ -147,25 +145,25 @@ function recognizeSentence(): boolean {
 
     switch (character) {
         case ';': {
-            phraseType = 'closing';
+            currentSentenceType = 'closing';
             break;
         }
         case ':': {
-            phraseType = 'opening';
+            currentSentenceType = 'opening';
             break;
         }
     }
 
-    closeCurrentPhrase(true);
+    closeCurrentSentence(true);
 
     return true;
 }
 
 function recognizeSentencePart(): boolean {
     if (character != ',') return false;
-    
-    phraseType = 'enumerating';
-    closeCurrentPhrase(true);
+
+    currentSentenceType = 'enumerating';
+    closeCurrentSentence(true);
 
     return true;
 }
@@ -176,7 +174,7 @@ function recognizeString(): boolean {
 
         // add character if inside string
         if (markerOfCurrentString != undefined) {
-            charactersOfCurrentPhrase.push(character);
+            charactersOfCurrentSentence.push(character);
             return true;
         } else {
             return false;
@@ -185,25 +183,25 @@ function recognizeString(): boolean {
 
     switch (character) {
         case '"': {
-            phraseType = 'safe-string';
+            currentSentenceType = 'safe-string';
             break;
         }
         case "'": {
-            phraseType = 'normal-string';
+            currentSentenceType = 'normal-string';
             break;
         }
     }
 
     if (markerOfCurrentString == undefined) {
         markerOfCurrentString = character;
-        //delete start of previous phrase and start new string
-        resetCurrentPhrase();
+        //delete start of previous sentence and start new string
+        resetCurrentSentence();
     } else if (markerOfCurrentString == character) {
         markerOfCurrentString = undefined;
-        closeCurrentPhrase(false);
+        closeCurrentSentence(false);
     } else {
         //string marker for diffent string type, treat as string content
-        charactersOfCurrentPhrase.push(character);
+        charactersOfCurrentSentence.push(character);
     }
 
     return true;
@@ -215,7 +213,7 @@ function recognizeOther(): boolean {
         character = ' ';
     }
 
-    // check if character should be added to phrase text
+    // check if character should be added to sentence text
     const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
     const leadingCharacterIsSpace: boolean =
         leadingCharacter != undefined &&
@@ -224,6 +222,6 @@ function recognizeOther(): boolean {
         characterIsSpace == true && leadingCharacterIsSpace == true;
 
     if (characterShouldBeIgnored) return true;
-    charactersOfCurrentPhrase.push(character);
+    charactersOfCurrentSentence.push(character);
     return true;
 }

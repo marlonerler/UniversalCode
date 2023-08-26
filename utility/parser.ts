@@ -3,28 +3,28 @@
 import { HeadAndBody } from '../types/parser';
 
 export function getHeadAndBody(
-    phraseCharaccters: string[],
+    characters: string[],
 ): HeadAndBody {
-    const phraseParts: HeadAndBody = {
+    const parts: HeadAndBody = {
         head: [],
         body: [],
     };
     let didPassFirstWhitespace: boolean = false;
 
-    for (let i = 0; i < phraseCharaccters.length; i++) {
-        const character: string = phraseCharaccters[i];
+    for (let i = 0; i < characters.length; i++) {
+        const character: string = characters[i];
 
         if (didPassFirstWhitespace == true) {
-            phraseParts.body.push(character);
+            parts.body.push(character);
         } else if (character == ' ') {
             // first whitespace separates head from body
             didPassFirstWhitespace = true;
         } else {
-            phraseParts.head.push(character);
+            parts.head.push(character);
         }
     }
 
-    return phraseParts;
+    return parts;
 }
 
 export function getValueOfBooleanString(boolean: 'true' | 'false'): 0 | 1 {

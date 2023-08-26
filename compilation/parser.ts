@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 // IMPORTS
-import { ParseResult, Phrase, Unit } from "../types/parser";
-import { getPhrasesFromCode } from "./codeToPhrases";
-import { getUnitsFromPhrases } from "./phrasesToUnits";
+import { ParseResult, Sentence, Unit } from "../types/parser";
+import { getSentencesFromCode } from "./codeToSentences";
+import { getUnitsFromSentences } from "./sentencesToUnits";
 
 // MAIN
 export function parseUnicCode(code: string): ParseResult {
-    const phrases: Phrase[] = getPhrasesFromCode(code);
-    console.log(phrases);
-    const units: Unit[] = getUnitsFromPhrases(phrases);
+    const sentences: Sentence[] = getSentencesFromCode(code);
+    console.log(sentences);
+    const units: Unit[] = getUnitsFromSentences(sentences);
     console.log(units);
 
     throw 'incomplete';
