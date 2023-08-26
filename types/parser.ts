@@ -95,10 +95,10 @@ export type Unit =
           type: 'boolean-operator';
           operatorType: BooleanOperator;
       }
-      | {
-        type: 'calculation';
-        calculationType: CalculationType;
-    }
+    | {
+          type: 'calculation';
+          calculationType: CalculationType;
+      }
     | {
           type: 'boolean';
           value: 0 | 1;
@@ -208,6 +208,9 @@ export type Unit =
           returnType: string;
       }
     | {
+          type: 'function-body-start';
+      }
+    | {
           type: 'function-call-start';
           functionName: string;
       }
@@ -228,14 +231,15 @@ export type Unit =
       }
     | {
           type: 'if-head';
-          condition: string;
       }
     | {
           type: 'elif-head';
-          condition: string;
       }
     | {
           type: 'else-head';
+      }
+    | {
+          type: 'if-body-start';
       }
     | {
           type: 'item-loop-head';
@@ -259,7 +263,7 @@ export type Unit =
           referenceValue: string;
       }
     | {
-          type: 'case-definition-end';
+          type: 'case-body-start';
       }
     | {
           type: 'struct-head';

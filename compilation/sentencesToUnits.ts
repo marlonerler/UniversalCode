@@ -247,7 +247,7 @@ function processOpeningMultiwordUnit(
             };
 
             trailingUnit = {
-                type: 'case-definition-end',
+                type: 'case-body-start',
             };
 
             scopes.push('case-body');
@@ -260,29 +260,6 @@ function processOpeningMultiwordUnit(
             };
             break;
         }
-        case 'if':
-        case 'elif': {
-            let type: 'if-head' | 'elif-head' | undefined = undefined;
-            if (currentSentenceHead == 'if') {
-                type = 'if-head';
-            } else if (currentSentenceHead == 'elif') {
-                type = 'elif-head';
-
-                //elif closes previous if scope
-                scopes.pop();
-            }
-
-            if (type == undefined) return false;
-
-            currentUnit = {
-                type,
-                condition: currentSentenceBody,
-            };
-
-            scopes.push('if-block-body');
-            break;
-        }
-
         case 'struct': {
             currentUnit = {
                 type: 'struct-head',
@@ -305,6 +282,10 @@ function processOpeningMultiwordUnit(
             currentUnit = {
                 type: 'function-return-type',
                 returnType: currentSentenceBody,
+            };
+
+            trailingUnit = {
+                type: 'function-body-start',
             };
 
             scopes.push('function-body');
@@ -699,11 +680,33 @@ function recognizeOpeningKeywords(): boolean {
                 type: 'else-head',
             };
 
+            trailingUnit = {
+                type: 'if-body-start',
+            };
+
             break;
         }
         case 'function': {
             currentUnit = {
                 type: 'function-type-definition',
+            };
+
+            break;
+        }
+        case 'if':
+        case 'elif': {
+            let type: 'if-head' | 'elif-head' | undefined = undefined;
+            if (currentSentenceHead == 'if') {
+                type = 'if-head';
+                scopes.push('if-block-body');
+            } else if (currentSentenceHead == 'elif') {
+                type = 'elif-head';
+            }
+
+            if (type == undefined) return false;
+
+            currentUnit = {
+                type,
             };
 
             break;
@@ -719,6 +722,13 @@ function recognizeOpeningKeywords(): boolean {
             currentUnit = {
                 type: 'return-keyword',
             };
+            break;
+        }
+        case 'then': {
+            currentUnit = {
+                type: 'if-body-start',
+            };
+
             break;
         }
         case 'yield': {
