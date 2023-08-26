@@ -10,6 +10,38 @@ export interface ParseResult {
 
 // OTHER
 /** Parsed line. Contains information for builder. */
+export type CalculationType =
+    | 'calculation-assignment-add'
+    | 'calculation-assignment-divide'
+    | 'calculation-assignment-multiply'
+    | 'calculation-assignment-subtract'
+    | 'calculation-add'
+    | 'calculation-divide'
+    | 'calculation-multiply'
+    | 'calculation-subtract'
+    | 'calculation-comparison-lower'
+    | 'calculation-comparison-greater'
+    | 'calculation-comparison-lower-equal'
+    | 'calculation-comparison-greater-equal'
+    | 'calculation-comparison-is-equal'
+    | 'calculation-comparison-not-equal';
+export const calculationTypeArray: CalculationType[] = [
+    'calculation-assignment-add',
+    'calculation-assignment-divide',
+    'calculation-assignment-multiply',
+    'calculation-assignment-subtract',
+    'calculation-add',
+    'calculation-divide',
+    'calculation-multiply',
+    'calculation-subtract',
+    'calculation-comparison-lower',
+    'calculation-comparison-greater',
+    'calculation-comparison-lower-equal',
+    'calculation-comparison-greater-equal',
+    'calculation-comparison-is-equal',
+    'calculation-comparison-not-equal',
+];
+
 export interface Function {
     name: string;
     returnType: string;
@@ -30,6 +62,8 @@ export interface Sentence {
 }
 
 export type SentenceType =
+    | 'unknown'
+    | CalculationType
     | 'accessor'
     | 'assignment-key'
     | 'comment'
@@ -48,6 +82,13 @@ export type Unit =
     | {
           type: 'unknown';
           text: string;
+      }
+    | {
+          type: 'closing';
+      }
+    | {
+          type: 'calculation';
+          calculationType: CalculationType;
       }
     | {
           type: 'boolean';
@@ -88,13 +129,7 @@ export type Unit =
           type: 'array-start';
       }
     | {
-          type: 'array-end';
-      }
-    | {
           type: 'object-start';
-      }
-    | {
-          type: 'object-end';
       }
     | {
           type: 'normal-string';
@@ -130,7 +165,7 @@ export type Unit =
           targetLanguage: string;
       }
     | {
-          type: 'assignment';
+          type: 'assignment-key';
           key: string;
       }
     | {
@@ -229,15 +264,13 @@ export type Unit =
           name: string;
       }
     | {
-          type: 'type-definition-end';
-      }
-    | {
           type: 'end-marker';
           endingScope: ScopeType;
       };
 
 export type ScopeType =
     | 'array-body'
+    | 'assignment'
     | 'case-body'
     | 'control-flow-body'
     | 'command-body'

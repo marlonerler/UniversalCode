@@ -4,7 +4,9 @@ export function checkIfCharacterIsSpace(character: string): boolean {
     return character == ' ' || character == '\t';
 }
 
-export function removeOuterSpacesFromCharacterArray(characterArray: string[]): string[] {
+export function removeOuterSpacesFromCharacterArray(
+    characterArray: string[],
+): string[] {
     let didRemoveAllLeadingSpaces: boolean = false;
     let didRemoveAllTrailingSpaces: boolean = false;
 
@@ -12,26 +14,30 @@ export function removeOuterSpacesFromCharacterArray(characterArray: string[]): s
     const cleanedStringCharacters: string[] = [];
 
     //collect indices of outer spaces
-    for (let indexFromStart: number = 0; indexFromStart < characterArray.length; indexFromStart++) {
+    for (
+        let indexFromStart: number = 0;
+        indexFromStart < characterArray.length;
+        indexFromStart++
+    ) {
         let indexFromEnd: number = characterArray.length - 1 - indexFromStart;
 
         if (didRemoveAllLeadingSpaces == false) {
-            const currentLeadingCharacter: string = characterArray[indexFromStart];
+            const currentLeadingCharacter: string =
+                characterArray[indexFromStart];
             if (checkIfCharacterIsSpace(currentLeadingCharacter) == false) {
                 didRemoveAllLeadingSpaces = true;
-                continue;
-            };
-
-            indicesOfCharactersToRemove.add(indexFromStart);
+            } else {
+                indicesOfCharactersToRemove.add(indexFromStart);
+            }
         }
         if (didRemoveAllTrailingSpaces == false) {
-            const currentTrailingCharacter: string = characterArray[indexFromEnd];
+            const currentTrailingCharacter: string =
+                characterArray[indexFromEnd];
             if (checkIfCharacterIsSpace(currentTrailingCharacter) == false) {
                 didRemoveAllTrailingSpaces = true;
-                continue;
-            };
-
-            indicesOfCharactersToRemove.add(indexFromEnd);
+            } else {
+                indicesOfCharactersToRemove.add(indexFromEnd);
+            }
         }
 
         if (didRemoveAllLeadingSpaces && didRemoveAllTrailingSpaces) {

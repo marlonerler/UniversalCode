@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 import {
+    ERROR_NO_CALCULATION_TYPE,
     ERROR_NO_SENTENCE_RECOGNITION,
     ERROR_NO_SENTENCE_TYPE,
 } from '../constants/errors';
-import { Sentence, SentenceType } from '../types/parser';
+import {
+    CalculationType,
+    Sentence,
+    SentenceType,
+    calculationTypeArray,
+} from '../types/parser';
 import {
     checkIfCharacterIsSpace,
     removeOuterSpacesFromCharacterArray,
@@ -12,28 +18,31 @@ import {
 // DATA
 let sentences: Sentence[];
 
-// current sentence
+// sentences
 let charactersOfCurrentSentence: string[];
 let currentSentenceType: SentenceType | undefined;
+let trailingSencence: Sentence | undefined;
 
 // current scope/block
 let markerOfCurrentString: string | undefined;
-let isCurrentlyInsideComment: boolean;
 let isCurrentlyInsideAccessor: boolean;
+let isCurrentlyInsideComment: boolean;
+let isCurrentlyInsideParentheses: boolean;
 let isEscaping: boolean;
 
 // tracking loop
 let indexOfCurrentCharacter: number = 0;
-let character: string = '';
+let currentCharacter: string = '';
 let leadingCharacter: string | undefined;
+let trailingCharacter: string | undefined;
+let relativeOffsetForNextCharacterIteration: number = 0;
 
 // MAIN
 export function getSentencesFromCode(code: string): Sentence[] {
     sentences = [];
 
-    // current sentence
+    // sentence
     charactersOfCurrentSentence = [];
-    currentSentenceType = undefined;
 
     // current scope/block
     markerOfCurrentString = undefined;
@@ -47,13 +56,20 @@ export function getSentencesFromCode(code: string): Sentence[] {
         indexOfCurrentCharacter < code.length;
         indexOfCurrentCharacter++
     ) {
-        character = code[indexOfCurrentCharacter];
+        relativeOffsetForNextCharacterIteration = 0;
+
+        currentCharacter = code[indexOfCurrentCharacter];
         leadingCharacter = code[indexOfCurrentCharacter - 1];
+        trailingCharacter = code[indexOfCurrentCharacter + 1];
+
+        currentSentenceType = undefined;
+        trailingSencence = undefined;
 
         let didRecognizeCharacter: boolean = false;
         const parseProcedure: CharacterRecognitionFunction[] = [
             recognizeComment,
             recognizeString,
+            recognizeCalculation,
             recognizeAccessor,
             recognizeSentence,
             recognizeSentencePart,
@@ -70,7 +86,13 @@ export function getSentencesFromCode(code: string): Sentence[] {
             throw ERROR_NO_SENTENCE_RECOGNITION(indexOfCurrentCharacter);
         }
 
-        isEscaping = character == '\\' && !isEscaping;
+        isEscaping = currentCharacter == '\\' && !isEscaping;
+
+        if (trailingSencence != undefined) {
+            sentences.push(trailingSencence);
+        }
+
+        indexOfCurrentCharacter += relativeOffsetForNextCharacterIteration;
     }
 
     return sentences;
@@ -108,16 +130,16 @@ type CharacterRecognitionFunction = () => boolean;
 
 function recognizeAccessor(): boolean {
     if (isCurrentlyInsideAccessor == true) {
-        if (character == ']') {
+        if (currentCharacter == ']') {
             isCurrentlyInsideAccessor = false;
             closeCurrentSentence(true);
         } else {
-            charactersOfCurrentSentence.push(character);
+            charactersOfCurrentSentence.push(currentCharacter);
         }
 
         return true;
     } else {
-        if (character != '[') return false;
+        if (currentCharacter != '[') return false;
 
         currentSentenceType = 'accessor';
         isCurrentlyInsideAccessor = true;
@@ -126,7 +148,9 @@ function recognizeAccessor(): boolean {
 }
 
 function recognizeAssignment(): boolean {
-    if (character != '=') return false;
+    if (leadingCharacter != ' ') return false;
+    if (trailingCharacter != ' ') return false;
+    if (currentCharacter != '=') return false;
 
     currentSentenceType = 'assignment-key';
     closeCurrentSentence(true);
@@ -134,18 +158,105 @@ function recognizeAssignment(): boolean {
     return true;
 }
 
+function recognizeCalculation(): boolean {
+    if (leadingCharacter != ' ') return false;
+
+    const trailingCharacterIsEqualitySign: boolean = trailingCharacter == '=';
+
+    let calculationDraft: string | undefined = undefined;
+    let comparisonDraft: string | undefined = undefined;
+
+    switch (currentCharacter) {
+        case '+': {
+            calculationDraft = 'add';
+            break;
+        }
+        case '-': {
+            calculationDraft = 'subtract';
+            break;
+        }
+        case '*': {
+            calculationDraft = 'multiply';
+            break;
+        }
+        case '/': {
+            calculationDraft = 'divide';
+            break;
+        }
+        case '<': {
+            comparisonDraft = 'lower';
+            break;
+        }
+        case '>': {
+            comparisonDraft = 'greater';
+            break;
+        }
+        case '!': {
+            comparisonDraft = 'not';
+            break;
+        }
+        case '=': {
+            if (trailingCharacterIsEqualitySign == false) break;
+            comparisonDraft = 'is';
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    // TODO IMPLEMENT TESTS
+    function closeCalculation(newSentenceType: string): boolean {
+        currentSentenceType = 'unknown';
+        closeCurrentSentence(true);
+
+        // this block type-checks at runtime, requiring the any
+        // unit test should be performed when building for safety
+        if (calculationTypeArray.includes(newSentenceType as any) == false) {
+            throw ERROR_NO_CALCULATION_TYPE(newSentenceType);
+        }
+
+        if (trailingCharacterIsEqualitySign == true) {
+            relativeOffsetForNextCharacterIteration = 1;
+        }
+
+        // newSentenceType was type-checked above
+        trailingSencence = {
+            type: newSentenceType as CalculationType,
+            rawTextCharacters: [],
+        };
+        return true;
+    }
+
+    if (calculationDraft != undefined) {
+        let newSentenceTypePart: string = calculationDraft;
+        if (trailingCharacterIsEqualitySign == true) {
+            newSentenceTypePart = `assignment-${newSentenceTypePart}`;
+        }
+        return closeCalculation(`calculation-${newSentenceTypePart}`);
+    } else if (comparisonDraft != undefined) {
+        let newSentenceType: string = `calculation-comparison-${comparisonDraft}`;
+        if (trailingCharacterIsEqualitySign == true) {
+            newSentenceType = `${newSentenceType}-equal`;
+        }
+        return closeCalculation(newSentenceType);
+    } else {
+        return false;
+    }
+}
+
 function recognizeComment(): boolean {
     if (isCurrentlyInsideComment == true) {
-        if (character == '\n') {
+        if (currentCharacter == '\n') {
             currentSentenceType = 'comment';
             isCurrentlyInsideComment = false;
             closeCurrentSentence(false);
         } else {
-            charactersOfCurrentSentence.push(character);
+            charactersOfCurrentSentence.push(currentCharacter);
         }
 
         return true;
-    } else if (character == '#') {
+    } else if (currentCharacter == '#') {
         //delete start of previous sentence and start comment
         resetCurrentSentence();
         isCurrentlyInsideComment = true;
@@ -157,9 +268,9 @@ function recognizeComment(): boolean {
 }
 
 function recognizeSentence(): boolean {
-    if (character != ';' && character != ':') return false;
+    if (currentCharacter != ';' && currentCharacter != ':') return false;
 
-    switch (character) {
+    switch (currentCharacter) {
         case ';': {
             currentSentenceType = 'closing';
             break;
@@ -176,7 +287,7 @@ function recognizeSentence(): boolean {
 }
 
 function recognizeSentencePart(): boolean {
-    if (character != ',') return false;
+    if (currentCharacter != ',') return false;
 
     currentSentenceType = 'enumerating';
     closeCurrentSentence(true);
@@ -185,17 +296,20 @@ function recognizeSentencePart(): boolean {
 }
 
 function recognizeString(): boolean {
-    if ((character != '"' && character != "'") || isEscaping == true) {
+    if (
+        (currentCharacter != '"' && currentCharacter != "'") ||
+        isEscaping == true
+    ) {
         // character is not string marker
 
         // add character if inside string
         if (markerOfCurrentString == undefined) return false;
 
-        charactersOfCurrentSentence.push(character);
+        charactersOfCurrentSentence.push(currentCharacter);
         return true;
     }
 
-    switch (character) {
+    switch (currentCharacter) {
         case '"': {
             currentSentenceType = 'safe-string';
             break;
@@ -207,28 +321,31 @@ function recognizeString(): boolean {
     }
 
     if (markerOfCurrentString == undefined) {
-        markerOfCurrentString = character;
+        markerOfCurrentString = currentCharacter;
         //delete start of previous sentence and start new string
         resetCurrentSentence();
-    } else if (markerOfCurrentString == character) {
+    } else if (markerOfCurrentString == currentCharacter) {
         markerOfCurrentString = undefined;
         closeCurrentSentence(false);
     } else {
         //string marker for diffent string type, treat as string content
-        charactersOfCurrentSentence.push(character);
+        charactersOfCurrentSentence.push(currentCharacter);
     }
 
     return true;
 }
 
 function recognizeOther(): boolean {
-    if (character == '\n') {
-        //do not preserve newlines
-        character = ' ';
+    switch (currentCharacter) {
+        case ' ':
+        case '\t':
+            {
+            }
+            currentCharacter = ' ';
     }
 
     // check if character should be added to sentence text
-    const characterIsSpace: boolean = checkIfCharacterIsSpace(character);
+    const characterIsSpace: boolean = checkIfCharacterIsSpace(currentCharacter);
     const leadingCharacterIsSpace: boolean =
         leadingCharacter != undefined &&
         checkIfCharacterIsSpace(leadingCharacter);
@@ -236,6 +353,6 @@ function recognizeOther(): boolean {
         characterIsSpace == true && leadingCharacterIsSpace == true;
 
     if (characterShouldBeIgnored) return true;
-    charactersOfCurrentSentence.push(character);
+    charactersOfCurrentSentence.push(currentCharacter);
     return true;
 }

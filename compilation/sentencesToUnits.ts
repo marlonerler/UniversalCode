@@ -8,8 +8,14 @@ import {
     ScopeType,
     scopesWithFunctionGrammar,
     Unit,
+    calculationTypeArray,
+    CalculationType,
 } from '../types/parser';
-import { getHeadAndBody, getValueOfBooleanString } from '../utility/parser';
+import {
+    getHeadAndBody,
+    getValueOfBooleanString,
+    verifyIsNumber,
+} from '../utility/parser';
 
 // DATA
 let units: Unit[];
@@ -28,6 +34,7 @@ let currentSentenceType: SentenceType | undefined;
 let currentSentenceCharacters: string[] = [];
 let currentSentenceHead: string;
 let currentSentenceBody: string;
+let currentSentenceText: string;
 
 // MAIN
 export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
@@ -50,6 +57,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
         currentSentenceType = currentSentence.type;
         currentSentenceCharacters = currentSentence.rawTextCharacters;
 
+        currentSentenceText = currentSentenceCharacters.join('');
         const sentenceParts: HeadAndBody = getHeadAndBody(
             currentSentenceCharacters,
         );
@@ -67,6 +75,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
 
             recognizeAccessor,
             recognizeCompoundDataTypes,
+
+            recognizeCalculation,
 
             recognizeOpeningKeywords,
             recognizeClosingKeywords,
@@ -441,24 +451,37 @@ function recognizeAccessor(): boolean {
 function recognizeAssignment(): boolean {
     if (currentSentenceType != 'assignment-key') return false;
 
-    const sentenceText: string = currentSentenceCharacters.join('');
+    currentUnit = {
+        type: 'assignment-key',
+        key: currentSentenceText,
+    };
+
+    scopes.push('assignment');
+    return true;
+}
+
+function recognizeBoolean(): boolean {
+    if (currentSentenceText != 'true' && currentSentenceText != 'false')
+        return false;
+    const booleanValue: 0 | 1 = getValueOfBooleanString(currentSentenceText);
 
     currentUnit = {
-        type: 'assignment',
-        key: sentenceText,
+        type: 'boolean',
+        value: booleanValue,
     };
 
     return true;
 }
 
-function recognizeBoolean(): boolean {
-    const sentenceText: string = currentSentenceCharacters.join('');
-    if (sentenceText != 'true' && sentenceText != 'false') return false;
-    const booleanValue: 0 | 1 = getValueOfBooleanString(sentenceText);
+function recognizeCalculation(): boolean {
+    if (currentSentenceType == undefined) return false;
+    // check if type is calculation type
+    if (calculationTypeArray.includes(currentSentenceType as any) == false)
+        return false;
 
     currentUnit = {
-        type: 'boolean',
-        value: booleanValue,
+        type: 'calculation',
+        calculationType: currentSentenceType as CalculationType,
     };
 
     return true;
@@ -508,11 +531,9 @@ function recognizeCommands(): boolean {
     if (getCurrentScopeType() != 'command-body') return false;
     if (currentSentenceType != 'opening') return false;
 
-    const sentenceText: string = currentSentenceCharacters.join('');
-
     currentUnit = {
         type: 'command',
-        commandName: sentenceText,
+        commandName: currentSentenceText,
     };
 
     return true;
@@ -532,9 +553,7 @@ function recognizeComment(): boolean {
 function recognizeCompoundDataTypes(): boolean {
     if (currentSentenceType != 'opening') return false;
 
-    const sentenceText: string = currentSentenceCharacters.join('');
-
-    switch (sentenceText) {
+    switch (currentSentenceText) {
         case 'array': {
             currentUnit = {
                 type: 'array-start',
@@ -585,27 +604,25 @@ function recognizeEndMarkers(): boolean {
 }
 
 function recognizeFalsyValues(): boolean {
-    const sentenceText: string = currentSentenceCharacters.join('');
     if (
-        sentenceText != 'undefined' &&
-        sentenceText != 'null' &&
-        sentenceText != 'NaN' &&
-        sentenceText != 'void'
+        currentSentenceText != 'undefined' &&
+        currentSentenceText != 'null' &&
+        currentSentenceText != 'NaN' &&
+        currentSentenceText != 'void'
     )
         return false;
 
     currentUnit = {
-        type: sentenceText,
+        type: currentSentenceText,
     };
 
     return true;
 }
 
 function recognizeIntegerOrFloat(): boolean {
-    const sentenceText: string = currentSentenceCharacters.join('');
-    const parsedNumber: number = parseFloat(sentenceText);
-
-    if (isNaN(parsedNumber) == true) return false;
+    if (currentSentenceCharacters.length == 0) return false;
+    if (verifyIsNumber(currentSentenceCharacters) == false) return false;
+    const parsedNumber: number = parseFloat(currentSentenceText);
 
     let unitType: 'float' | 'integer' = 'float';
     if (Number.isInteger(parsedNumber)) {
@@ -701,9 +718,14 @@ function recognizeOpeningKeywords(): boolean {
     return true;
 }
 
-function recognizeReferences(): boolean{
-    // body means whitespace but reference must not have whitespace
-    if (currentSentenceBody.length > 0) return false;
+function recognizeReferences(): boolean {
+    if (currentSentenceCharacters.length == 0) return false;
+
+    for (let i: number = 0; i < currentSentenceCharacters.length; i++) {
+        const character: string = currentSentenceCharacters[i];
+        if (character == ' ') return false;
+        if (character == '.') return false;
+    }
 
     currentUnit = {
         type: 'reference',
@@ -763,39 +785,21 @@ function recognizeVariableDeclaration(): boolean {
 function catchOther(): boolean {
     if (currentSentenceType == 'closing') {
         switch (getCurrentScopeType()) {
-            case 'array-body': {
-                scopes.pop();
-
-                trailingUnit = {
-                    type: 'array-end',
-                };
-                break;
-            }
-            case 'function-call': {
-                scopes.pop();
-
-                trailingUnit = {
-                    type: 'function-call-end',
-                };
-                break;
-            }
-            case 'object-body': {
-                scopes.pop();
-
-                trailingUnit = {
-                    type: 'object-end',
-                };
-                break;
-            }
+            case 'assignment':
+            case 'array-body':
+            case 'function-call':
+            case 'object-body':
             case 'type-definition': {
                 scopes.pop();
 
-                trailingUnit = {
-                    type: 'type-definition-end',
-                };
                 break;
             }
         }
+
+        trailingUnit = {
+            type: 'closing',
+        };
+        return true;
     }
 
     return false;
