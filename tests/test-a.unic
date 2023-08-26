@@ -1,7 +1,0 @@
-type Sometype: 
-    1, 
-    2;
-
-struct SomeStruct:
-    string someString,
-    number someNumber;

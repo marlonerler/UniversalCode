@@ -80,12 +80,6 @@ function closeCurrentSentence(shouldCleanString: boolean): void {
         throw ERROR_NO_SENTENCE_TYPE(indexOfCurrentCharacter);
     }
 
-    if (charactersOfCurrentSentence.length == 0) {
-        //do not add empty sentences
-        resetCurrentSentence();
-        return;
-    }
-
     if (shouldCleanString == true) {
         charactersOfCurrentSentence = removeOuterSpacesFromCharacterArray(
             charactersOfCurrentSentence,

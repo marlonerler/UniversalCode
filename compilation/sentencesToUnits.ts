@@ -79,10 +79,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             if (didRecognizeSentence == true) break;
         }
         if (didRecognizeSentence == false) {
-            currentUnit = {
-                type: 'unknown',
-                text: currentSentenceCharacters.join(''),
-            };
+            useFallbackUnit();
         }
         // process unit for edge cases
         catchOther();
@@ -106,6 +103,14 @@ function checkIfScopeUsesFunctionGrammar(): boolean {
 
 function getCurrentScopeType(): ScopeType {
     return scopes[scopes.length - 1];
+}
+
+function useFallbackUnit(): void {
+    if (currentSentenceCharacters.length == 0) return;
+    currentUnit = {
+        type: 'reference',
+        referencedItem: currentSentenceCharacters.join(''),
+    };
 }
 
 // multiword
@@ -157,12 +162,20 @@ function processEnumeratingMultiwordUnit(
     bodyString: string,
 ): boolean {
     switch (headString) {
+        case 'case': {
+            currentUnit = {
+                type: 'case-definition',
+                referenceValue: bodyString,
+            };
+
+            break;
+        }
         case 'count':
-        case 'each':
+        case 'walk':
         case 'until': {
             let loopTypes: { [key: string]: LoopType } = {
                 count: 'index',
-                each: 'item',
+                walk: 'item',
                 until: 'count',
             };
             const loopType: LoopType | undefined = loopTypes[headString];
@@ -197,20 +210,24 @@ function processOpeningMultiwordUnit(
             scopes.push('function-call');
             break;
         }
+        case 'case': {
+            currentUnit = {
+                type: 'case-definition',
+                referenceValue: bodyString,
+            };
+
+            trailingUnit = {
+                type: 'case-definition-end',
+            };
+
+            scopes.push('case-body');
+            break;
+        }
         case 'function': {
             currentUnit = {
                 type: 'function-head',
                 name: bodyString,
             };
-            break;
-        }
-        case 'struct': {
-            currentUnit = {
-                type: 'struct-head',
-                name: bodyString,
-            };
-
-            scopes.push('struct-body');
             break;
         }
         case 'if':
@@ -240,6 +257,24 @@ function processOpeningMultiwordUnit(
                 type: 'else-head',
             };
 
+            break;
+        }
+        case 'struct': {
+            currentUnit = {
+                type: 'struct-head',
+                name: bodyString,
+            };
+
+            scopes.push('struct-body');
+            break;
+        }
+        case 'switch': {
+            currentUnit = {
+                type: 'switch-head',
+                variable: bodyString,
+            };
+
+            scopes.push('switch-body');
             break;
         }
         case 'return': {
@@ -308,8 +343,6 @@ function recognizeAssignment(): boolean {
 }
 
 function recognizeBoolean(): boolean {
-    if (currentSentenceType != 'closing') return false;
-
     const sentenceText: string = currentSentenceCharacters.join('');
     if (sentenceText != 'true' && sentenceText != 'false') return false;
     const booleanValue: 0 | 1 = getValueOfBooleanString(sentenceText);
@@ -352,7 +385,6 @@ function recognizeCommands(): boolean {
 }
 
 function recognizeComment(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (currentSentenceType != 'comment') return false;
 
     currentUnit = {
@@ -407,7 +439,7 @@ function recognizeEndMarkers(): boolean {
         fn: 'function-body',
         loop: 'loop-body',
         if: 'if-block-body',
-        ifc: 'struct-body',
+        struct: 'struct-body',
         switch: 'switch-body',
     };
 
@@ -425,8 +457,6 @@ function recognizeEndMarkers(): boolean {
 }
 
 function recognizeFalsyValues(): boolean {
-    if (currentSentenceType != 'closing') return false;
-
     const sentenceText: string = currentSentenceCharacters.join('');
     if (
         sentenceText != 'undefined' &&
@@ -444,8 +474,6 @@ function recognizeFalsyValues(): boolean {
 }
 
 function recognizeIntegerOrFloat(): boolean {
-    if (currentSentenceType != 'closing') return false;
-
     const sentenceText: string = currentSentenceCharacters.join('');
     const parsedNumber: number = parseFloat(sentenceText);
 
@@ -515,7 +543,6 @@ function recognizeMultiwordUnit(): boolean {
 }
 
 function recognizeString(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (
         currentSentenceType != 'safe-string' &&
         currentSentenceType != 'normal-string'
@@ -600,14 +627,6 @@ function catchOther(): boolean {
 
                 trailingUnit = {
                     type: 'object-end',
-                };
-                break;
-            }
-            case 'struct-body': {
-                scopes.pop();
-
-                trailingUnit = {
-                    type: 'struct-end',
                 };
                 break;
             }

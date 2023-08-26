@@ -47,10 +47,6 @@ export interface HeadAndBody {
 
 export type Unit =
     | {
-          type: 'unknown';
-          text: string;
-      }
-    | {
           type: 'boolean';
           value: 0 | 1;
       }
@@ -73,6 +69,10 @@ export type Unit =
     | {
           type: 'float';
           value: number;
+      }
+    | {
+          type: 'reference';
+          referencedItem: string;
       }
     | {
           type: 'array-start';
@@ -186,22 +186,22 @@ export type Unit =
           referenceValue: string;
       }
     | {
-          type: 'case-head';
+          type: 'case-definition-end';
       }
     | {
           type: 'struct-head';
           name: string;
       }
-      | {
+    | {
           type: 'struct-end';
       }
     | {
           type: 'type-definition-start';
           name: string;
       }
-      | {
-        type: 'type-definition-end';
-    }
+    | {
+          type: 'type-definition-end';
+      }
     | {
           type: 'end-marker';
           endingScope: ScopeType;
