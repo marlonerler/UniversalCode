@@ -30,8 +30,7 @@ export interface Sentence {
 }
 
 export type SentenceType =
-    | 'acccess-open'
-    | 'acccess-close'
+    | 'accessor'
     | 'assignment-key'
     | 'comment'
     | 'closing'
@@ -73,6 +72,12 @@ export type Unit =
     | {
           type: 'reference';
           referencedItem: string;
+      }
+    | {
+          type: 'accessor';
+          members: string[];
+          methodName: string | undefined;
+          methodParameters: string[];
       }
     | {
           type: 'array-start';

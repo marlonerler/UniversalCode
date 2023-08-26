@@ -57,6 +57,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeFalsyValues,
             recognizeIntegerOrFloat,
             recognizeString,
+
+            recognizeAccessor,
             recognizeCompoundDataTypes,
 
             recognizeMultiwordUnit,
@@ -328,6 +330,95 @@ function processOpeningMultiwordUnit(
 
 // recognition
 type SentenceRecognitionFunction = () => boolean;
+
+function recognizeAccessor(): boolean {
+    if (currentSentenceType != 'accessor') return false;
+
+    const members: string[] = [];
+    let currentMemberCharacters: string[] = [];
+
+    let methodNameCharacters: string[] = [];
+    let methodParameters: string[] = [];
+    let currentMethodParameterCharacters: string[] = [];
+
+    let isDefiningMethodName: boolean = false;
+    let isDefiningMethodParameters: boolean = false;
+
+    for (let i: number = 0; i < currentSentenceCharacters.length; i++) {
+        const currentCharacter: string = currentSentenceCharacters[i];
+        const leadingCharacter: string = currentSentenceCharacters[i - 1];
+
+        // no repeating spaces
+        if (currentCharacter == ' ' && leadingCharacter == ' ') continue;
+
+        const isLastCharacter: boolean =
+            i === currentSentenceCharacters.length - 1;
+        const isSpace: boolean = currentCharacter == ' ';
+        const isPeriod: boolean = currentCharacter == '.';
+        const isComma: boolean = currentCharacter == ',';
+        const isColon: boolean = currentCharacter == ':';
+
+        const isNotWordCharacter =
+            isSpace == true ||
+            isPeriod == true ||
+            isComma == true ||
+            isColon == true;
+
+        if (isDefiningMethodParameters == true) {
+            if (isSpace == true) continue;
+            if (isComma == false) {
+                currentMethodParameterCharacters.push(currentCharacter);
+            }
+
+            if (isComma == true || isLastCharacter == true) {
+                methodParameters.push(
+                    currentMethodParameterCharacters.join(''),
+                );
+                currentMethodParameterCharacters = [];
+                continue;
+            }
+        } else if (isDefiningMethodName == true) {
+            if (isColon == true) {
+                isDefiningMethodParameters = true;
+                continue;
+            }
+
+            methodNameCharacters.push(currentCharacter);
+        } else {
+            if (isSpace == true) {
+                isDefiningMethodName = true;
+            }
+
+            if (isNotWordCharacter == false) {
+                currentMemberCharacters.push(currentCharacter);
+            }
+
+            if (
+                isSpace == true ||
+                isPeriod == true ||
+                isLastCharacter == true
+            ) {
+                members.push(currentMemberCharacters.join(''));
+                currentMemberCharacters = [];
+                continue;
+            }
+        }
+    }
+
+    let methodName: string | undefined = undefined;
+    if (methodNameCharacters.length > 0) {
+        methodName = methodNameCharacters.join('');
+    }
+
+    currentUnit = {
+        type: 'accessor',
+        members: members,
+        methodName,
+        methodParameters,
+    };
+
+    return true;
+}
 
 function recognizeAssignment(): boolean {
     if (currentSentenceType != 'assignment-key') return false;

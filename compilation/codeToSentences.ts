@@ -19,6 +19,7 @@ let currentSentenceType: SentenceType | undefined;
 // current scope/block
 let markerOfCurrentString: string | undefined;
 let isCurrentlyInsideComment: boolean;
+let isCurrentlyInsideAccessor: boolean;
 let isEscaping: boolean;
 
 // tracking loop
@@ -37,6 +38,7 @@ export function getSentencesFromCode(code: string): Sentence[] {
     // current scope/block
     markerOfCurrentString = undefined;
     isCurrentlyInsideComment = false;
+    isCurrentlyInsideAccessor = false;
     isEscaping = false;
 
     // loop over every character
@@ -48,10 +50,11 @@ export function getSentencesFromCode(code: string): Sentence[] {
         character = code[indexOfCurrentCharacter];
         leadingCharacter = code[indexOfCurrentCharacter - 1];
 
-        let couldClassifyCharacter: boolean = false;
+        let didRecognizeCharacter: boolean = false;
         const parseProcedure: CharacterRecognitionFunction[] = [
-            recognizeString,
             recognizeComment,
+            recognizeString,
+            recognizeAccessor,
             recognizeSentence,
             recognizeSentencePart,
             recognizeAssignment,
@@ -60,14 +63,14 @@ export function getSentencesFromCode(code: string): Sentence[] {
         for (let j = 0; j < parseProcedure.length; j++) {
             const functionToRun: CharacterRecognitionFunction =
                 parseProcedure[j];
-            couldClassifyCharacter = functionToRun();
-            if (couldClassifyCharacter == true) break;
+            didRecognizeCharacter = functionToRun();
+            if (didRecognizeCharacter == true) break;
         }
-        if (couldClassifyCharacter == false) {
+        if (didRecognizeCharacter == false) {
             throw ERROR_NO_SENTENCE_RECOGNITION(indexOfCurrentCharacter);
         }
 
-        isEscaping = character == '\\' && leadingCharacter != '\\';
+        isEscaping = character == '\\' && !isEscaping;
     }
 
     return sentences;
@@ -102,6 +105,25 @@ function resetCurrentSentence(): void {
 
 // recognition
 type CharacterRecognitionFunction = () => boolean;
+
+function recognizeAccessor(): boolean {
+    if (isCurrentlyInsideAccessor == true) {
+        if (character == ']') {
+            isCurrentlyInsideAccessor = false;
+            closeCurrentSentence(true);
+        } else {
+            charactersOfCurrentSentence.push(character);
+        }
+
+        return true;
+    } else {
+        if (character != '[') return false;
+
+        currentSentenceType = 'accessor';
+        isCurrentlyInsideAccessor = true;
+        return true;
+    }
+}
 
 function recognizeAssignment(): boolean {
     if (character != '=') return false;
@@ -167,12 +189,10 @@ function recognizeString(): boolean {
         // character is not string marker
 
         // add character if inside string
-        if (markerOfCurrentString != undefined) {
-            charactersOfCurrentSentence.push(character);
-            return true;
-        } else {
-            return false;
-        }
+        if (markerOfCurrentString == undefined) return false;
+
+        charactersOfCurrentSentence.push(character);
+        return true;
     }
 
     switch (character) {
