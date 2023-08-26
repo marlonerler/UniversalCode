@@ -9,7 +9,11 @@ export interface ParseResult {
 }
 
 // OTHER
-/** Parsed line. Contains information for builder. */
+export type BooleanOperator =
+    | 'boolean-operator-and'
+    | 'boolean-operator-or'
+    | 'boolean-operator-not';
+
 export type CalculationType =
     | 'calculation-assignment-add'
     | 'calculation-assignment-divide'
@@ -63,6 +67,7 @@ export interface Sentence {
 
 export type SentenceType =
     | 'unknown'
+    | BooleanOperator
     | CalculationType
     | 'accessor'
     | 'assignment-key'
@@ -87,9 +92,13 @@ export type Unit =
           type: 'closing';
       }
     | {
-          type: 'calculation';
-          calculationType: CalculationType;
+          type: 'boolean-operator';
+          operatorType: BooleanOperator;
       }
+      | {
+        type: 'calculation';
+        calculationType: CalculationType;
+    }
     | {
           type: 'boolean';
           value: 0 | 1;

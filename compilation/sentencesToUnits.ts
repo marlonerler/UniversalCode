@@ -76,6 +76,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeAccessor,
             recognizeCompoundDataTypes,
 
+            recognizeBooleanOperator,
             recognizeCalculation,
 
             recognizeOpeningKeywords,
@@ -473,6 +474,22 @@ function recognizeBoolean(): boolean {
     return true;
 }
 
+function recognizeBooleanOperator(): boolean {
+    switch (currentSentenceType) {
+        case 'boolean-operator-not':
+        case 'boolean-operator-and':
+        case 'boolean-operator-or': {
+            currentUnit = {
+                type: 'boolean-operator',
+                operatorType: currentSentenceType,
+            };
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function recognizeCalculation(): boolean {
     if (currentSentenceType == undefined) return false;
     // check if type is calculation type
@@ -782,7 +799,7 @@ function recognizeVariableDeclaration(): boolean {
     return true;
 }
 
-function catchOther(): boolean {
+function catchOther(): false {
     if (currentSentenceType == 'closing') {
         switch (getCurrentScopeType()) {
             case 'assignment':
@@ -791,15 +808,12 @@ function catchOther(): boolean {
             case 'object-body':
             case 'type-definition': {
                 scopes.pop();
-
-                break;
             }
         }
 
         trailingUnit = {
             type: 'closing',
         };
-        return true;
     }
 
     return false;

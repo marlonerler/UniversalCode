@@ -21,7 +21,7 @@ let sentences: Sentence[];
 // sentences
 let charactersOfCurrentSentence: string[];
 let currentSentenceType: SentenceType | undefined;
-let trailingSencence: Sentence | undefined;
+let trailingSentence: Sentence | undefined;
 
 // current scope/block
 let markerOfCurrentString: string | undefined;
@@ -63,17 +63,18 @@ export function getSentencesFromCode(code: string): Sentence[] {
         trailingCharacter = code[indexOfCurrentCharacter + 1];
 
         currentSentenceType = undefined;
-        trailingSencence = undefined;
+        trailingSentence = undefined;
 
         let didRecognizeCharacter: boolean = false;
         const parseProcedure: CharacterRecognitionFunction[] = [
-            recognizeComment,
-            recognizeString,
-            recognizeCalculation,
-            recognizeAccessor,
-            recognizeSentence,
-            recognizeSentencePart,
-            recognizeAssignment,
+            recognizeComments,
+            recognizeStrings,
+            recognizeCalculations,
+            recognizeBooleanOperators,
+            recognizeAccessors,
+            recognizeSentences,
+            recognizeSentenceParts,
+            recognizeAssignments,
             recognizeOther,
         ];
         for (let j = 0; j < parseProcedure.length; j++) {
@@ -88,8 +89,8 @@ export function getSentencesFromCode(code: string): Sentence[] {
 
         isEscaping = currentCharacter == '\\' && !isEscaping;
 
-        if (trailingSencence != undefined) {
-            sentences.push(trailingSencence);
+        if (trailingSentence != undefined) {
+            sentences.push(trailingSentence);
         }
 
         indexOfCurrentCharacter += relativeOffsetForNextCharacterIteration;
@@ -128,7 +129,7 @@ function resetCurrentSentence(): void {
 // recognition
 type CharacterRecognitionFunction = () => boolean;
 
-function recognizeAccessor(): boolean {
+function recognizeAccessors(): boolean {
     if (isCurrentlyInsideAccessor == true) {
         if (currentCharacter == ']') {
             isCurrentlyInsideAccessor = false;
@@ -147,7 +148,7 @@ function recognizeAccessor(): boolean {
     }
 }
 
-function recognizeAssignment(): boolean {
+function recognizeAssignments(): boolean {
     if (leadingCharacter != ' ') return false;
     if (trailingCharacter != ' ') return false;
     if (currentCharacter != '=') return false;
@@ -158,7 +159,45 @@ function recognizeAssignment(): boolean {
     return true;
 }
 
-function recognizeCalculation(): boolean {
+function recognizeBooleanOperators(): boolean {
+    if (currentCharacter == '!') {
+        currentSentenceType = 'boolean-operator-not';
+        closeCurrentSentence(true);
+        return true;
+    }
+
+    if (currentCharacter == trailingCharacter) {
+        let sentenceType: SentenceType | undefined = undefined;
+        switch (currentCharacter) {
+            case '&': {
+                sentenceType = 'boolean-operator-and';
+                break;
+            }
+            case '|': {
+                sentenceType = 'boolean-operator-or';
+                break;
+            }
+        }
+
+        if (sentenceType == undefined) return false;
+
+        trailingSentence = {
+            type: sentenceType,
+            rawTextCharacters: [],
+        };
+
+        currentSentenceType = 'unknown';
+        closeCurrentSentence(true);
+
+        relativeOffsetForNextCharacterIteration = 1;
+
+        return true;
+    }
+
+    return false;
+}
+
+function recognizeCalculations(): boolean {
     if (leadingCharacter != ' ') return false;
 
     const trailingCharacterIsEqualitySign: boolean = trailingCharacter == '=';
@@ -221,7 +260,7 @@ function recognizeCalculation(): boolean {
         }
 
         // newSentenceType was type-checked above
-        trailingSencence = {
+        trailingSentence = {
             type: newSentenceType as CalculationType,
             rawTextCharacters: [],
         };
@@ -245,7 +284,7 @@ function recognizeCalculation(): boolean {
     }
 }
 
-function recognizeComment(): boolean {
+function recognizeComments(): boolean {
     if (isCurrentlyInsideComment == true) {
         if (currentCharacter == '\n') {
             currentSentenceType = 'comment';
@@ -267,7 +306,7 @@ function recognizeComment(): boolean {
     }
 }
 
-function recognizeSentence(): boolean {
+function recognizeSentences(): boolean {
     if (currentCharacter != ';' && currentCharacter != ':') return false;
 
     switch (currentCharacter) {
@@ -286,7 +325,7 @@ function recognizeSentence(): boolean {
     return true;
 }
 
-function recognizeSentencePart(): boolean {
+function recognizeSentenceParts(): boolean {
     if (currentCharacter != ',') return false;
 
     currentSentenceType = 'enumerating';
@@ -295,7 +334,7 @@ function recognizeSentencePart(): boolean {
     return true;
 }
 
-function recognizeString(): boolean {
+function recognizeStrings(): boolean {
     if (
         (currentCharacter != '"' && currentCharacter != "'") ||
         isEscaping == true

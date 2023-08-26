@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 export function checkIfCharacterIsSpace(character: string): boolean {
-    return character == ' ' || character == '\t';
+    return character == ' ' || character == '\t' || character == '\n';
 }
 
 export function removeOuterSpacesFromCharacterArray(
