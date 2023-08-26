@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { ERROR_NO_SENTENCE_RECOGNITION } from '../constants/errors';
 import {
     HeadAndBody,
     LoopType,
@@ -27,6 +26,8 @@ let indexOfCurrentSentence: number = 0;
 let currentSentence: Sentence | undefined;
 let currentSentenceType: SentenceType | undefined;
 let currentSentenceCharacters: string[] = [];
+let currentSentenceHead: string;
+let currentSentenceBody: string;
 
 // MAIN
 export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
@@ -49,6 +50,12 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
         currentSentenceType = currentSentence.type;
         currentSentenceCharacters = currentSentence.rawTextCharacters;
 
+        const sentenceParts: HeadAndBody = getHeadAndBody(
+            currentSentenceCharacters,
+        );
+        currentSentenceHead = sentenceParts.head.join('');
+        currentSentenceBody = sentenceParts.body.join('');
+
         let didRecognizeSentence: boolean = false;
         const reognitionFunctions: SentenceRecognitionFunction[] = [
             recognizeComment,
@@ -62,6 +69,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeCompoundDataTypes,
 
             recognizeMultiwordUnit,
+            recognizeOpeningKeywords,
+            recognizeClosingKeywords,
 
             recognizeVariableDeclaration,
             recognizeAssignment,
@@ -117,36 +126,35 @@ function useFallbackUnit(): void {
 
 // multiword
 function processClosingMultiwordUnit(
-    sentenceParts: HeadAndBody,
-    headString: string,
-    bodyString: string,
+    currentSentenceHead: string,
+    currentSentenceBody: string,
 ): boolean {
-    switch (headString) {
+    switch (currentSentenceHead) {
         case 'import': {
             currentUnit = {
                 type: 'import',
-                sourceName: sentenceParts.body.join(''),
+                sourceName: currentSentenceBody,
             };
             break;
         }
         case 'language': {
             currentUnit = {
                 type: 'language-definition',
-                targetLanguage: sentenceParts.body.join(''),
+                targetLanguage: currentSentenceBody,
             };
             break;
         }
         case 'module': {
             currentUnit = {
                 type: 'module-name-definition',
-                moduleName: sentenceParts.body.join(''),
+                moduleName: currentSentenceBody,
             };
             break;
         }
         case 'section': {
             currentUnit = {
                 type: 'section-marker',
-                sectionName: sentenceParts.body.join(''),
+                sectionName: currentSentenceBody,
             };
             break;
         }
@@ -159,15 +167,14 @@ function processClosingMultiwordUnit(
 }
 
 function processEnumeratingMultiwordUnit(
-    sentenceParts: HeadAndBody,
-    headString: string,
-    bodyString: string,
+    currentSentenceHead: string,
+    currentSentenceBody: string,
 ): boolean {
-    switch (headString) {
+    switch (currentSentenceHead) {
         case 'case': {
             currentUnit = {
                 type: 'case-definition',
-                referenceValue: bodyString,
+                referenceValue: currentSentenceBody,
             };
 
             break;
@@ -180,13 +187,14 @@ function processEnumeratingMultiwordUnit(
                 walk: 'item',
                 until: 'count',
             };
-            const loopType: LoopType | undefined = loopTypes[headString];
+            const loopType: LoopType | undefined =
+                loopTypes[currentSentenceHead];
             if (loopType == undefined) return false;
 
             currentUnit = {
                 type: 'item-loop-head',
                 loopType,
-                iterableName: bodyString,
+                iterableName: currentSentenceBody,
             };
             break;
         }
@@ -199,15 +207,14 @@ function processEnumeratingMultiwordUnit(
 }
 
 function processOpeningMultiwordUnit(
-    sentenceParts: HeadAndBody,
-    headString: string,
-    bodyString: string,
+    currentSentenceHead: string,
+    currentSentenceBody: string,
 ): boolean {
-    switch (headString) {
+    switch (currentSentenceHead) {
         case 'call': {
             currentUnit = {
                 type: 'function-call-start',
-                functionName: bodyString,
+                functionName: currentSentenceBody,
             };
             scopes.push('function-call');
             break;
@@ -215,7 +222,7 @@ function processOpeningMultiwordUnit(
         case 'case': {
             currentUnit = {
                 type: 'case-definition',
-                referenceValue: bodyString,
+                referenceValue: currentSentenceBody,
             };
 
             trailingUnit = {
@@ -228,16 +235,16 @@ function processOpeningMultiwordUnit(
         case 'function': {
             currentUnit = {
                 type: 'function-head',
-                name: bodyString,
+                name: currentSentenceBody,
             };
             break;
         }
         case 'if':
         case 'elif': {
             let type: 'if-head' | 'elif-head' | undefined = undefined;
-            if (headString == 'if') {
+            if (currentSentenceHead == 'if') {
                 type = 'if-head';
-            } else if (headString == 'elif') {
+            } else if (currentSentenceHead == 'elif') {
                 type = 'elif-head';
 
                 //elif closes previous if scope
@@ -248,23 +255,17 @@ function processOpeningMultiwordUnit(
 
             currentUnit = {
                 type,
-                condition: bodyString,
+                condition: currentSentenceBody,
             };
 
             scopes.push('if-block-body');
             break;
         }
-        case 'else': {
-            currentUnit = {
-                type: 'else-head',
-            };
 
-            break;
-        }
         case 'struct': {
             currentUnit = {
                 type: 'struct-head',
-                name: bodyString,
+                name: currentSentenceBody,
             };
 
             scopes.push('struct-body');
@@ -273,22 +274,16 @@ function processOpeningMultiwordUnit(
         case 'switch': {
             currentUnit = {
                 type: 'switch-head',
-                variable: bodyString,
+                variable: currentSentenceBody,
             };
 
             scopes.push('switch-body');
             break;
         }
-        case 'return': {
-            currentUnit = {
-                type: 'return-statement',
-            };
-            break;
-        }
         case 'returns': {
             currentUnit = {
                 type: 'function-return-type-annotation',
-                returnType: bodyString,
+                returnType: currentSentenceBody,
             };
 
             scopes.push('function-body');
@@ -297,7 +292,7 @@ function processOpeningMultiwordUnit(
         case 'take': {
             currentUnit = {
                 type: 'loop-iterator-name-definition',
-                value: bodyString,
+                value: currentSentenceBody,
             };
 
             scopes.push('loop-body');
@@ -306,7 +301,7 @@ function processOpeningMultiwordUnit(
         case 'type': {
             currentUnit = {
                 type: 'type-definition-start',
-                name: bodyString,
+                name: currentSentenceBody,
             };
             scopes.push('type-definition');
             break;
@@ -314,7 +309,7 @@ function processOpeningMultiwordUnit(
         case 'while': {
             currentUnit = {
                 type: 'while-loop-head',
-                condition: bodyString,
+                condition: currentSentenceBody,
             };
 
             scopes.push('loop-body');
@@ -334,6 +329,7 @@ type SentenceRecognitionFunction = () => boolean;
 function recognizeAccessor(): boolean {
     if (currentSentenceType != 'accessor') return false;
 
+    const accessedItemCharacters: string[] = [];
     const members: string[] = [];
     let currentMemberCharacters: string[] = [];
 
@@ -341,6 +337,7 @@ function recognizeAccessor(): boolean {
     let methodParameters: string[] = [];
     let currentMethodParameterCharacters: string[] = [];
 
+    let isDefiningMembers: boolean = false;
     let isDefiningMethodName: boolean = false;
     let isDefiningMethodParameters: boolean = false;
 
@@ -384,7 +381,7 @@ function recognizeAccessor(): boolean {
             }
 
             methodNameCharacters.push(currentCharacter);
-        } else {
+        } else if (isDefiningMembers) {
             if (isSpace == true) {
                 isDefiningMethodName = true;
             }
@@ -402,6 +399,12 @@ function recognizeAccessor(): boolean {
                 currentMemberCharacters = [];
                 continue;
             }
+        } else {
+            if (isPeriod == true) {
+                isDefiningMembers = true;
+                continue;
+            }
+            accessedItemCharacters.push(currentCharacter);
         }
     }
 
@@ -412,6 +415,7 @@ function recognizeAccessor(): boolean {
 
     currentUnit = {
         type: 'accessor',
+        accessedItem: accessedItemCharacters.join(''),
         members: members,
         methodName,
         methodParameters,
@@ -442,6 +446,31 @@ function recognizeBoolean(): boolean {
         type: 'boolean',
         value: booleanValue,
     };
+
+    return true;
+}
+
+function recognizeClosingKeywords(): boolean {
+    if (currentSentenceType != 'closing') return false;
+
+    const sentenceText = currentSentenceCharacters.join('');
+    switch (sentenceText) {
+        case 'break': {
+            currentUnit = {
+                type: 'break-keyword',
+            };
+            break;
+        }
+        case 'continue': {
+            currentUnit = {
+                type: 'continue-keyword',
+            };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -515,14 +544,7 @@ function recognizeCompoundDataTypes(): boolean {
 }
 
 function recognizeEndMarkers(): boolean {
-    const sentenceParts: HeadAndBody = getHeadAndBody(
-        currentSentenceCharacters,
-    );
-    const headString: string = sentenceParts.head.join('');
-
-    if (headString != 'end') return false;
-
-    const bodyText: string = sentenceParts.body.join('');
+    if (currentSentenceHead != 'end') return false;
 
     const endingScopes: { [key: string]: ScopeType } = {
         case: 'case-body',
@@ -534,7 +556,8 @@ function recognizeEndMarkers(): boolean {
         switch: 'switch-body',
     };
 
-    const endingScope: ScopeType | undefined = endingScopes[bodyText];
+    const endingScope: ScopeType | undefined =
+        endingScopes[currentSentenceBody];
     if (endingScope == undefined) return false;
 
     currentUnit = {
@@ -587,50 +610,67 @@ function recognizeFunctionDefinition(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (currentSentenceType != 'opening') return false;
 
-    const sentenceParts: HeadAndBody = getHeadAndBody(
-        currentSentenceCharacters,
-    );
-    const headString: string = sentenceParts.head.join('');
-    const bodyString: string = sentenceParts.body.join('');
-
-    if (headString != 'function') return false;
+    if (currentSentenceHead != 'function') return false;
 
     currentUnit = {
         type: 'function-head',
-        name: bodyString,
+        name: currentSentenceBody,
     };
 
     return true;
 }
 
 function recognizeMultiwordUnit(): boolean {
-    const sentenceParts: HeadAndBody = getHeadAndBody(
-        currentSentenceCharacters,
-    );
-    const headString: string = sentenceParts.head.join('');
-    const bodyString = sentenceParts.body.join('');
-
     if (currentSentenceType == 'closing') {
         return processClosingMultiwordUnit(
-            sentenceParts,
-            headString,
-            bodyString,
+            currentSentenceHead,
+            currentSentenceBody,
         );
     } else if (currentSentenceType == 'opening') {
         return processOpeningMultiwordUnit(
-            sentenceParts,
-            headString,
-            bodyString,
+            currentSentenceHead,
+            currentSentenceBody,
         );
     } else if (currentSentenceType == 'enumerating') {
         return processEnumeratingMultiwordUnit(
-            sentenceParts,
-            headString,
-            bodyString,
+            currentSentenceHead,
+            currentSentenceBody,
         );
     }
 
     return false;
+}
+
+function recognizeOpeningKeywords(): boolean {
+    if (currentSentenceType != 'opening') return false;
+
+    const sentenceText = currentSentenceCharacters.join('');
+    switch (sentenceText) {
+        case 'else': {
+            currentUnit = {
+                type: 'else-head',
+            };
+
+            break;
+        }
+        case 'return': {
+            currentUnit = {
+                type: 'return-keyword',
+            };
+            break;
+        }
+        case 'yield': {
+            currentUnit = {
+                type: 'yield-keyword',
+            };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function recognizeString(): boolean {
@@ -649,24 +689,17 @@ function recognizeString(): boolean {
 }
 
 function recognizeTwoWordCluster(): boolean {
-    const sentenceParts: HeadAndBody = getHeadAndBody(
-        currentSentenceCharacters,
-    );
-    if (sentenceParts.body.length == 0) return false;
-
-    const headString: string = sentenceParts.head.join('');
+    if (currentSentenceBody.length == 0) return false;
 
     // body must contain no space
-    for (let i: number = 0; i < sentenceParts.body.length; i++) {
-        if (sentenceParts.body[i] == ' ') return false;
+    for (let i: number = 0; i < currentSentenceBody.length; i++) {
+        if (currentSentenceBody[i] == ' ') return false;
     }
-
-    const bodyString = sentenceParts.body.join('');
 
     currentUnit = {
         type: 'two-word-cluster',
-        first: headString,
-        second: bodyString,
+        first: currentSentenceHead,
+        second: currentSentenceBody,
     };
 
     return true;
@@ -676,19 +709,13 @@ function recognizeVariableDeclaration(): boolean {
     if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (currentSentenceType != 'opening') return false;
 
-    const sentenceParts: HeadAndBody = getHeadAndBody(
-        currentSentenceCharacters,
-    );
-    const headString: string = sentenceParts.head.join('');
-
-    if (headString != 'constant' && headString != 'mutable') return false;
-
-    const dataType: string = sentenceParts.body.join('');
+    if (currentSentenceHead != 'constant' && currentSentenceHead != 'mutable')
+        return false;
 
     currentUnit = {
         type: 'variable-declatarion',
-        isMutable: headString == 'mutable',
-        dataType,
+        isMutable: currentSentenceHead == 'mutable',
+        dataType: currentSentenceBody,
     };
 
     return true;

@@ -75,6 +75,7 @@ export type Unit =
       }
     | {
           type: 'accessor';
+          accessedItem: string;
           members: string[];
           methodName: string | undefined;
           methodParameters: string[];
@@ -156,7 +157,16 @@ export type Unit =
           type: 'function-call-end';
       }
     | {
-          type: 'return-statement';
+          type: 'return-keyword';
+      }
+      | {
+          type: 'continue-keyword';
+      }
+      | {
+          type: 'break-keyword';
+      }
+      | {
+          type: 'yield-keyword';
       }
     | {
           type: 'if-head';
