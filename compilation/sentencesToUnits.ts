@@ -80,6 +80,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeFunctionDefinition,
 
             recognizeEndMarkers,
+            recognizeReferences,
             recognizeMultiwordUnit,
             recognizeTwoWordCluster,
         ];
@@ -119,8 +120,8 @@ function getCurrentScopeType(): ScopeType {
 function useFallbackUnit(): void {
     if (currentSentenceCharacters.length == 0) return;
     currentUnit = {
-        type: 'reference',
-        referencedItem: currentSentenceCharacters.join(''),
+        type: 'unknown',
+        text: currentSentenceCharacters.join(''),
     };
 }
 
@@ -697,6 +698,17 @@ function recognizeOpeningKeywords(): boolean {
         }
     }
 
+    return true;
+}
+
+function recognizeReferences(): boolean{
+    // body means whitespace but reference must not have whitespace
+    if (currentSentenceBody.length > 0) return false;
+
+    currentUnit = {
+        type: 'reference',
+        referencedItem: currentSentenceCharacters.join(''),
+    };
     return true;
 }
 

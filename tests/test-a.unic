@@ -1,0 +1,17 @@
+reference;
+not a reference; 
+
+1 == 1;
+1 < 2;
+1 > 2;
+1 <= 2;
+1 >= 2;
+1 + 2;
+1 - 2;
+1 * 2;
+1 / 2;
+
+true and false;
+true or false;
+true and not false;
+not true and false;
