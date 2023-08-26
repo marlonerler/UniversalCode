@@ -252,6 +252,13 @@ function processOpeningMultiwordUnit(
             scopes.push('case-body');
             break;
         }
+        case 'checkpoint': {
+            currentUnit = {
+                type: 'checkpoint',
+                name: currentSentenceBody,
+            };
+            break;
+        }
         case 'function': {
             currentUnit = {
                 type: 'function-head',

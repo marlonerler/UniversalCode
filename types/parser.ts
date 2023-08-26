@@ -221,6 +221,10 @@ export type Unit =
           type: 'return-keyword';
       }
     | {
+          type: 'checkpoint';
+          name: string;
+      }
+    | {
           type: 'continue-keyword';
       }
     | {

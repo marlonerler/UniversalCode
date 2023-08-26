@@ -1,0 +1,5 @@
+checkpoint myLoop:
+while: a == b, do:
+    continue;
+    continue: myLoop;
+end loop;
