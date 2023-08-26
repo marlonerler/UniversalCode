@@ -3,3 +3,6 @@ while: a == b, do:
     continue;
     continue: myLoop;
 end loop;
+
+count someArray, take item:
+end loop;

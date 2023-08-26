@@ -299,8 +299,12 @@ function processOpeningMultiwordUnit(
         }
         case 'take': {
             currentUnit = {
-                type: 'loop-iterator-name-definition',
+                type: 'item-loop-iterator-definition',
                 value: currentSentenceBody,
+            };
+
+            trailingUnit = {
+                type: 'item-loop-body-start',
             };
 
             scopes.push('loop-body');
@@ -686,7 +690,7 @@ function recognizeOpeningKeywords(): boolean {
         }
         case 'do': {
             currentUnit = {
-                type: 'while-body-start',
+                type: 'conditional-loop-body-start',
             };
 
             break;
@@ -749,7 +753,7 @@ function recognizeOpeningKeywords(): boolean {
         }
         case 'while': {
             currentUnit = {
-                type: 'while-loop-head',
+                type: 'conditional-loop-head',
             };
 
             break;

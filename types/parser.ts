@@ -248,14 +248,17 @@ export type Unit =
           iterableName: string;
       }
     | {
-          type: 'while-loop-head';
-      }
-    | {
-          type: 'while-body-start';
-      }
-    | {
-          type: 'loop-iterator-name-definition';
+          type: 'item-loop-iterator-definition';
           value: string;
+      }
+    | {
+          type: 'item-loop-body-start';
+      }
+    | {
+          type: 'conditional-loop-head';
+      }
+    | {
+          type: 'conditional-loop-body-start';
       }
     | {
           type: 'switch-head';
