@@ -1,8 +1,0 @@
-constant string: someString = 'Hello!';
-yield: something;
-continue;
-break;
-
-[object.nested.property]
-[object.nested.property method]
-[object.nested.property method: 123, 234]

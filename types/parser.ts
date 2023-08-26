@@ -142,11 +142,21 @@ export type Unit =
           commandName: string;
       }
     | {
+          type: 'function-type-definition';
+      }
+    | {
+          type: 'function-type-definition-return-type';
+          returnType: string;
+      }
+    | {
           type: 'function-head';
           name: string;
       }
     | {
-          type: 'function-return-type-annotation';
+          type: 'method-head';
+      }
+    | {
+          type: 'function-return-type';
           returnType: string;
       }
     | {
@@ -159,13 +169,13 @@ export type Unit =
     | {
           type: 'return-keyword';
       }
-      | {
+    | {
           type: 'continue-keyword';
       }
-      | {
+    | {
           type: 'break-keyword';
       }
-      | {
+    | {
           type: 'yield-keyword';
       }
     | {

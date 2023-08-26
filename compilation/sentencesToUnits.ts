@@ -68,7 +68,6 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeAccessor,
             recognizeCompoundDataTypes,
 
-            recognizeMultiwordUnit,
             recognizeOpeningKeywords,
             recognizeClosingKeywords,
 
@@ -81,6 +80,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeFunctionDefinition,
 
             recognizeEndMarkers,
+            recognizeMultiwordUnit,
             recognizeTwoWordCluster,
         ];
         for (let j = 0; j < reognitionFunctions.length; j++) {
@@ -149,6 +149,15 @@ function processClosingMultiwordUnit(
                 type: 'module-name-definition',
                 moduleName: currentSentenceBody,
             };
+            break;
+        }
+        case 'returns': {
+            currentUnit = {
+                type: 'function-type-definition-return-type',
+                returnType: currentSentenceBody,
+            };
+
+            scopes.push('function-body');
             break;
         }
         case 'section': {
@@ -282,7 +291,7 @@ function processOpeningMultiwordUnit(
         }
         case 'returns': {
             currentUnit = {
-                type: 'function-return-type-annotation',
+                type: 'function-return-type',
                 returnType: currentSentenceBody,
             };
 
@@ -402,6 +411,10 @@ function recognizeAccessor(): boolean {
         } else {
             if (isPeriod == true) {
                 isDefiningMembers = true;
+                continue;
+            }
+            if (isSpace == true) {
+                isDefiningMethodName = true;
                 continue;
             }
             accessedItemCharacters.push(currentCharacter);
@@ -649,6 +662,20 @@ function recognizeOpeningKeywords(): boolean {
         case 'else': {
             currentUnit = {
                 type: 'else-head',
+            };
+
+            break;
+        }
+        case 'function': {
+            currentUnit = {
+                type: 'function-type-definition',
+            };
+
+            break;
+        }
+        case 'method': {
+            currentUnit = {
+                type: 'method-head',
             };
 
             break;
