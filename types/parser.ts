@@ -194,7 +194,6 @@ export type Unit =
       }
       | {
           type: 'struct-end';
-          name: string;
       }
     | {
           type: 'type-definition-start';
