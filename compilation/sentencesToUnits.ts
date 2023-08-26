@@ -672,6 +672,12 @@ function recognizeOpeningKeywords(): boolean {
 
     const sentenceText = currentSentenceCharacters.join('');
     switch (sentenceText) {
+        case 'break': {
+            currentUnit = {
+                type: 'break-keyword',
+            };
+            break;
+        }
         case 'continue': {
             currentUnit = {
                 type: 'continue-keyword',
