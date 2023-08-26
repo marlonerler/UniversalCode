@@ -245,7 +245,6 @@ export type Unit =
     | {
           type: 'item-loop-head';
           loopType: LoopType;
-          iterableName: string;
       }
     | {
           type: 'item-loop-iterator-definition';

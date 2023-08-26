@@ -199,25 +199,6 @@ function processEnumeratingMultiwordUnit(
 
             break;
         }
-        case 'count':
-        case 'walk':
-        case 'until': {
-            let loopTypes: { [key: string]: LoopType } = {
-                count: 'index',
-                walk: 'item',
-                until: 'count',
-            };
-            const loopType: LoopType | undefined =
-                loopTypes[currentSentenceHead];
-            if (loopType == undefined) return false;
-
-            currentUnit = {
-                type: 'item-loop-head',
-                loopType,
-                iterableName: currentSentenceBody,
-            };
-            break;
-        }
         default: {
             return false;
         }
@@ -685,6 +666,24 @@ function recognizeOpeningKeywords(): boolean {
         case 'continue': {
             currentUnit = {
                 type: 'continue-keyword',
+            };
+            break;
+        }
+        case 'count':
+        case 'walk':
+        case 'until': {
+            let loopTypes: { [key: string]: LoopType } = {
+                count: 'index',
+                walk: 'item',
+                until: 'count',
+            };
+            const loopType: LoopType | undefined =
+                loopTypes[currentSentenceHead];
+            if (loopType == undefined) return false;
+
+            currentUnit = {
+                type: 'item-loop-head',
+                loopType,
             };
             break;
         }

@@ -4,5 +4,5 @@ while: a == b, do:
     continue: myLoop;
 end loop;
 
-count someArray, take item:
+count: myArray, take item:
 end loop;
