@@ -665,6 +665,12 @@ function recognizeOpeningKeywords(): boolean {
 
     const sentenceText = currentSentenceCharacters.join('');
     switch (sentenceText) {
+        case 'continue': {
+            currentUnit = {
+                type: 'continue-keyword',
+            };
+            break;
+        }
         case 'do': {
             currentUnit = {
                 type: 'while-body-start',
@@ -733,12 +739,6 @@ function recognizeOpeningKeywords(): boolean {
                 type: 'while-loop-head',
             };
 
-            break;
-        }
-        case 'yield': {
-            currentUnit = {
-                type: 'yield-keyword',
-            };
             break;
         }
         default: {

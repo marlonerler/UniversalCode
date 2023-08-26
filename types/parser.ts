@@ -227,9 +227,6 @@ export type Unit =
           type: 'break-keyword';
       }
     | {
-          type: 'yield-keyword';
-      }
-    | {
           type: 'if-head';
       }
     | {
