@@ -30,13 +30,15 @@ export interface Sentence {
 }
 
 export type SentenceType =
-    | 'closing'
-    | 'opening'
-    | 'enumerating'
+    | 'acccess-open'
+    | 'acccess-close'
     | 'assignment-key'
+    | 'comment'
+    | 'closing'
+    | 'enumerating'
     | 'normal-string'
-    | 'safe-string'
-    | 'comment';
+    | 'opening'
+    | 'safe-string';
 
 export interface HeadAndBody {
     head: string[];
@@ -187,14 +189,20 @@ export type Unit =
           type: 'case-head';
       }
     | {
-          type: 'interface-head';
+          type: 'struct-head';
+          name: string;
+      }
+      | {
+          type: 'struct-end';
           name: string;
       }
     | {
-          type: 'type-definition';
+          type: 'type-definition-start';
           name: string;
-          typeReferences: string[];
       }
+      | {
+        type: 'type-definition-end';
+    }
     | {
           type: 'end-marker';
           endingScope: ScopeType;
@@ -206,12 +214,13 @@ export type ScopeType =
     | 'control-flow-body'
     | 'command-body'
     | 'if-block-body'
-    | 'interface-body'
     | 'function-call'
     | 'function-body'
     | 'loop-body'
     | 'object-body'
-    | 'switch-body';
+    | 'struct-body'
+    | 'switch-body'
+    | 'type-definition';
 
 export const scopesWithFunctionGrammar: ScopeType[] = [
     'case-body',

@@ -1,27 +1,7 @@
-command:
-    rename: greetPersonByName = greetPerson;
-end cmd;
+type Sometype: 
+    1, 
+    2;
 
-myNumber = 123;
-
-interface Person:
-    string name,
-    int age,
-end ifc;
-
-constant Person: jane = object:
-    name = 'Jane',
-    age = 42;
-
-constant Person[]: people = array:
-    john, jane;
-
-function greetPerson: string name, returns string:
-    constant string: greetingString = 'Hello, $name!';
-    return: greetingString;
-end fn;
-
-each people, take person:
-    constant string: greetingString = call greetPerson: person.name;
-    call console.log: greetingString;
-end loop;
+struct SomeStruct:
+    string someString,
+    number someNumber;
