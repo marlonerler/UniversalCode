@@ -1,3 +1,9 @@
-[a.b=123];
-[a.b method: parameter1, parameter2];
-[a.b = 123];
+struct Person:
+    mutable string: name;
+    mutable int: age;
+end struct;
+
+constant Person: john = object:
+    name = 'John';
+    age = 42;
+end object;

@@ -780,7 +780,6 @@ function recognizeTwoWordCluster(): boolean {
 }
 
 function recognizeVariableDeclaration(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
     if (currentSentenceType != 'opening') return false;
 
     if (currentSentenceHead != 'constant' && currentSentenceHead != 'mutable')
