@@ -169,6 +169,7 @@ function recognizeAccessors(): boolean {
                 isCurrentlyInsideAccessor = false;
                 currentSentenceType = 'accessor';
                 closeCurrentSentence(true);
+                break;
             }
             default: {
                 charactersOfCurrentSentence.push(currentCharacter);

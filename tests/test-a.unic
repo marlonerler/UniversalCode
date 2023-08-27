@@ -1,4 +1,4 @@
-[console log: 123];
+[console log] 123;
 'Hello \{123\}'
 1 + (2 + 3);
 {
