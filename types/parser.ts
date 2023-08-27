@@ -69,7 +69,11 @@ export type SentenceType =
     | 'unknown'
     | BooleanOperator
     | CalculationType
-    | 'accessor'
+    | 'accessor-start'
+    | 'accessor-member'
+    | 'accessor-last-item'
+    | 'accessor-assignment-marker'
+    | 'accessor-end'
     | 'assignment-key'
     | 'comment'
     | 'closing'
@@ -141,10 +145,21 @@ export type Unit =
           referencedItem: string;
       }
     | {
-          type: 'accessor';
-          accessedItem: string;
-          members: string[];
-          methodName: string | undefined;
+          type: 'accessor-start';
+      }
+    | {
+          type: 'accessor-end';
+      }
+    | {
+          type: 'accessor-member';
+          name: string;
+      }
+    | {
+          type: 'accessor-assignment-marker';
+      }
+    | {
+          type: 'accessor-method-call-name';
+          name: string;
       }
     | {
           type: 'array-start';
@@ -300,6 +315,7 @@ export type Unit =
       };
 
 export type ScopeType =
+    | 'accessor'
     | 'array-body'
     | 'assignment'
     | 'case-head'

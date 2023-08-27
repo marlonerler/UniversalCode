@@ -1,15 +1,3 @@
-function greetByName: string name, returns string:
-end function;
-
-type StringProcessor:
-    function: string name, returns string;
-end type;
-
-struct Person:
-    method greet: bool something, returns string;
-end struct;
-
-object:
-    method greet: bool something, returns string:
-    end method;
-end object;
+[a.b=123];
+[a.b method: parameter1, parameter2];
+[a.b = 123];

@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import {
+    CHARACTER_ACCESSOR_ASSIGNMENT_SEPARATOR,
+    CHARACTER_ACCESSOR_MEMBER_SEPARATOR,
+    CHARACTER_ACCESSOR_OPERATION_SEPARATOR,
     CHARACTER_ESCAPE,
     CHARACTER_INDENT,
     CHARACTER_SPACE,
@@ -50,7 +53,7 @@ import {
 let sentences: Sentence[];
 
 // sentences
-let charactersOfCurrentSentence: string[];
+let currentSentenceCharacters: string[];
 let currentSentenceType: SentenceType | undefined;
 let trailingSentence: Sentence | undefined;
 
@@ -73,7 +76,7 @@ export function getSentencesFromCode(code: string): Sentence[] {
     sentences = [];
 
     // sentence
-    charactersOfCurrentSentence = [];
+    currentSentenceCharacters = [];
 
     // current scope/block
     markerOfCurrentString = undefined;
@@ -140,13 +143,21 @@ function closeCurrentSentence(shouldCleanString: boolean): void {
     }
 
     if (shouldCleanString == true) {
-        charactersOfCurrentSentence = removeOuterSpacesFromCharacterArray(
-            charactersOfCurrentSentence,
+        currentSentenceCharacters = removeOuterSpacesFromCharacterArray(
+            currentSentenceCharacters,
         );
     }
 
+    // only allow specific sentences to be empty
+    if (
+        currentSentenceCharacters.length == 0 &&
+        currentSentenceType != 'closing' &&
+        currentSentenceType != 'accessor-start'
+    )
+        return;
+
     const newSentence: Sentence = {
-        rawTextCharacters: charactersOfCurrentSentence,
+        rawTextCharacters: currentSentenceCharacters,
         type: currentSentenceType,
     };
     sentences.push(newSentence);
@@ -156,31 +167,58 @@ function closeCurrentSentence(shouldCleanString: boolean): void {
 
 function resetCurrentSentence(): void {
     currentSentenceType = undefined;
-    charactersOfCurrentSentence = [];
+    currentSentenceCharacters = [];
 }
 
 // recognition
 type CharacterRecognitionFunction = () => boolean;
 
 function recognizeAccessors(): boolean {
-    if (isCurrentlyInsideAccessor == true) {
-        switch (currentCharacter) {
-            case SENTENCE_MARKER_ACCESSOR_END: {
-                isCurrentlyInsideAccessor = false;
-                currentSentenceType = 'accessor';
-                closeCurrentSentence(true);
-                break;
-            }
-            default: {
-                charactersOfCurrentSentence.push(currentCharacter);
-            }
-        }
+    if (isCurrentlyInsideAccessor == false) {
+        if (currentCharacter != SENTENCE_MARKER_ACCESSOR_START) return false;
+
+        isCurrentlyInsideAccessor = true;
+        currentSentenceType = 'accessor-start';
+        closeCurrentSentence(true);
         return true;
     }
 
-    if (currentCharacter != SENTENCE_MARKER_ACCESSOR_START) return false;
+    switch (currentCharacter) {
+        case SENTENCE_MARKER_ACCESSOR_END: {
+            isCurrentlyInsideAccessor = false;
+            currentSentenceType = 'accessor-last-item';
+            closeCurrentSentence(true);
 
-    isCurrentlyInsideAccessor = true;
+            trailingSentence = {
+                type: 'accessor-end',
+                rawTextCharacters: [],
+            };
+            break;
+        }
+        case CHARACTER_ACCESSOR_MEMBER_SEPARATOR: {
+            currentSentenceType = 'accessor-member';
+            closeCurrentSentence(true);
+            break;
+        }
+        case CHARACTER_ACCESSOR_ASSIGNMENT_SEPARATOR: {
+            currentSentenceType = 'accessor-member';
+            closeCurrentSentence(true);
+
+            trailingSentence = {
+                type: 'accessor-assignment-marker',
+                rawTextCharacters: [],
+            };
+            break;
+        }
+        case CHARACTER_ACCESSOR_OPERATION_SEPARATOR: {
+            currentSentenceType = 'accessor-member';
+            closeCurrentSentence(true);
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -327,7 +365,7 @@ function recognizeComments(): boolean {
             isCurrentlyInsideComment = false;
             closeCurrentSentence(false);
         } else {
-            charactersOfCurrentSentence.push(currentCharacter);
+            currentSentenceCharacters.push(currentCharacter);
         }
 
         return true;
@@ -400,7 +438,7 @@ function recognizeStrings(): boolean {
         // cancel if not in string
         if (markerOfCurrentString == undefined) return false;
 
-        charactersOfCurrentSentence.push(currentCharacter);
+        currentSentenceCharacters.push(currentCharacter);
         return true;
     }
 
@@ -424,7 +462,7 @@ function recognizeStrings(): boolean {
         closeCurrentSentence(false);
     } else {
         //string marker for diffent string type, treat as string content
-        charactersOfCurrentSentence.push(currentCharacter);
+        currentSentenceCharacters.push(currentCharacter);
     }
 
     return true;
@@ -447,7 +485,7 @@ function recognizeTargetLanguageCode(): boolean {
                 return true;
             }
             default: {
-                charactersOfCurrentSentence.push(currentCharacter);
+                currentSentenceCharacters.push(currentCharacter);
             }
         }
 
@@ -478,6 +516,6 @@ function recognizeOther(): boolean {
         characterIsSpace == true && leadingCharacterIsSpace == true;
 
     if (characterShouldBeIgnored) return true;
-    charactersOfCurrentSentence.push(currentCharacter);
+    currentSentenceCharacters.push(currentCharacter);
     return true;
 }

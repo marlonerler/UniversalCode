@@ -71,12 +71,12 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeComment,
 
             recognizeBoolean,
-            recognizeFalsyValues,
+            recognizeFalsyValue,
             recognizeIntegerOrFloat,
             recognizeString,
 
             recognizeAccessor,
-            recognizeCompoundDataTypes,
+            recognizeCompoundDataType,
 
             recognizeParantheses,
             recognizeBooleanOperator,
@@ -274,77 +274,41 @@ function processOpeningMultiwordUnit(
 type SentenceRecognitionFunction = () => boolean;
 
 function recognizeAccessor(): boolean {
-    if (currentSentenceType != 'accessor') return false;
-
-    const accessedItemCharacters: string[] = [];
-    const members: string[] = [];
-    let currentMemberCharacters: string[] = [];
-
-    let methodNameCharacters: string[] = [];
-
-    let isDefiningMembers: boolean = false;
-    let isDefiningMethodName: boolean = false;
-
-    for (let i: number = 0; i < currentSentenceCharacters.length; i++) {
-        const currentCharacter: string = currentSentenceCharacters[i];
-        const leadingCharacter: string = currentSentenceCharacters[i - 1];
-
-        // no repeating spaces
-        if (currentCharacter == ' ' && leadingCharacter == ' ') continue;
-
-        const isLastCharacter: boolean =
-            i === currentSentenceCharacters.length - 1;
-        const isSpace: boolean = currentCharacter == ' ';
-        const isPeriod: boolean = currentCharacter == '.';
-        const isComma: boolean = currentCharacter == ',';
-
-        const isNotWordCharacter =
-            isSpace == true || isPeriod == true || isComma == true;
-
-        if (isDefiningMethodName == true) {
-            methodNameCharacters.push(currentCharacter);
-        } else if (isDefiningMembers) {
-            if (isSpace == true) {
-                isDefiningMethodName = true;
+    switch (currentSentenceType) {
+        case 'accessor-start':
+        case 'accessor-end':
+        case 'accessor-assignment-marker': {
+            if (currentSentenceType == 'accessor-start') {
+                scopes.push('accessor');
+            } else if (currentSentenceType == 'accessor-end') {
+                scopes.pop();
             }
 
-            if (isNotWordCharacter == false) {
-                currentMemberCharacters.push(currentCharacter);
-            }
+            currentUnit = {
+                type: currentSentenceType,
+            };
+            break;
+        }
+        case 'accessor-member': {
+            currentUnit = {
+                type: 'accessor-member',
+                name: currentSentenceText,
+            };
+            break;
+        }
+        case 'opening': {
+            if (getCurrentScopeType() != 'accessor') return false;
 
-            if (
-                isSpace == true ||
-                isPeriod == true ||
-                isLastCharacter == true
-            ) {
-                members.push(currentMemberCharacters.join(''));
-                currentMemberCharacters = [];
-                continue;
-            }
-        } else {
-            if (isPeriod == true) {
-                isDefiningMembers = true;
-                continue;
-            }
-            if (isSpace == true) {
-                isDefiningMethodName = true;
-                continue;
-            }
-            accessedItemCharacters.push(currentCharacter);
+            currentUnit = {
+                type: 'accessor-method-call-name',
+                name: currentSentenceText,
+            };
+            break;
+        }
+        default: {
+            return false;
         }
     }
-
-    let methodName: string | undefined = undefined;
-    if (methodNameCharacters.length > 0) {
-        methodName = methodNameCharacters.join('');
-    }
-
-    currentUnit = {
-        type: 'accessor',
-        accessedItem: accessedItemCharacters.join(''),
-        members: members,
-        methodName,
-    };
 
     return true;
 }
@@ -473,7 +437,7 @@ function recognizeComment(): boolean {
     return true;
 }
 
-function recognizeCompoundDataTypes(): boolean {
+function recognizeCompoundDataType(): boolean {
     if (currentSentenceType != 'opening') return false;
 
     switch (currentSentenceText) {
@@ -530,7 +494,7 @@ function recognizeEndMarkers(): boolean {
     return true;
 }
 
-function recognizeFalsyValues(): boolean {
+function recognizeFalsyValue(): boolean {
     if (
         currentSentenceText != 'undefined' &&
         currentSentenceText != 'null' &&
