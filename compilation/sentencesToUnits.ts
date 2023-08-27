@@ -683,7 +683,7 @@ function recognizeOpeningKeywords(): boolean {
         }
         case 'function': {
             currentUnit = {
-                type: 'function-type-definition',
+                type: 'function-definition-start',
             };
 
             break;
@@ -702,13 +702,6 @@ function recognizeOpeningKeywords(): boolean {
 
             currentUnit = {
                 type,
-            };
-
-            break;
-        }
-        case 'method': {
-            currentUnit = {
-                type: 'method-head',
             };
 
             break;
@@ -839,6 +832,7 @@ function recognizeVariableDeclaration(): boolean {
 }
 
 function catchEdgeCases(): void {
+    if (trailingUnit != undefined) return;
     const currentScopeType: ScopeType = getCurrentScopeType();
 
     switch (currentSentenceType) {

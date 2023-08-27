@@ -1,16 +1,15 @@
-struct Person:
-    string name;
-    int age;
+function greetByName: string name, returns string:
+end function;
 
-    method greet: returns string;
+type StringProcessor:
+    function: string name, returns string;
+end type;
+
+struct Person:
+    method greet: bool something, returns string;
 end struct;
 
-constant Person: john = object:
-    name = 'John';
-    age = 42;
-
-    method greet: returns string:
-        constant string: name = [self.name];
-        return: 'Hello, $name!';
+object:
+    method greet: bool something, returns string:
     end method;
 end object;

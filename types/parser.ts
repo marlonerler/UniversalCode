@@ -217,6 +217,9 @@ export type Unit =
           type: 'function-or-method-body-start';
       }
     | {
+          type: 'function-definition-start';
+      }
+    | {
           type: 'function-or-method-definition-end';
       }
     | {
