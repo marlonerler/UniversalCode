@@ -401,10 +401,9 @@ function recognizeStrings(): boolean {
 function recognizeOther(): boolean {
     switch (currentCharacter) {
         case ' ':
-        case '\t':
-            {
-            }
+        case '\t': {
             currentCharacter = ' ';
+        }
     }
 
     // check if character should be added to sentence text
