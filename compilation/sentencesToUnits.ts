@@ -91,7 +91,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeCommandHead,
             recognizeCommands,
 
-            recognizeFunctionDefinition,
+            recognizeFunctionOrMethodDefinition,
 
             recognizeEndMarkers,
             recognizeReferences,
@@ -167,8 +167,12 @@ function processClosingMultiwordUnit(
         }
         case 'returns': {
             currentUnit = {
-                type: 'function-type-definition-return-type',
+                type: 'return-type-definition',
                 returnType: currentSentenceBody,
+            };
+
+            trailingUnit = {
+                type: 'function-or-method-definition-end',
             };
 
             break;
@@ -226,12 +230,12 @@ function processOpeningMultiwordUnit(
         }
         case 'returns': {
             currentUnit = {
-                type: 'function-return-type',
+                type: 'return-type-definition',
                 returnType: currentSentenceBody,
             };
 
             trailingUnit = {
-                type: 'function-body-start',
+                type: 'function-or-method-body-start',
             };
 
             scopes.push('function-body');
@@ -499,13 +503,17 @@ function recognizeEndMarkers(): boolean {
     if (currentSentenceHead != 'end') return false;
 
     const endingScopes: { [key: string]: ScopeType } = {
+        array: 'array-body',
         case: 'case-body',
-        cmd: 'command-body',
-        fn: 'function-body',
+        command: 'command-body',
+        function: 'function-body',
+        method: 'method-body',
         loop: 'loop-body',
         if: 'if-block-body',
+        object: 'object-body',
         struct: 'struct-body',
         switch: 'switch-body',
+        type: 'type-definition',
     };
 
     const endingScope: ScopeType | undefined =
@@ -556,16 +564,29 @@ function recognizeIntegerOrFloat(): boolean {
     return true;
 }
 
-function recognizeFunctionDefinition(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
+function recognizeFunctionOrMethodDefinition(): boolean {
     if (currentSentenceType != 'opening') return false;
 
-    if (currentSentenceHead != 'function') return false;
-
-    currentUnit = {
-        type: 'function-head',
-        name: currentSentenceBody,
-    };
+    switch (currentSentenceHead) {
+        case 'function': {
+            if (checkIfScopeUsesFunctionGrammar() == false) return false;
+            currentUnit = {
+                type: 'function-head',
+                name: currentSentenceBody,
+            };
+            break;
+        }
+        case 'method': {
+            currentUnit = {
+                type: 'method-head',
+                name: currentSentenceBody,
+            };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -824,9 +845,7 @@ function catchEdgeCases(): void {
         case 'closing': {
             switch (currentScopeType) {
                 case 'assignment':
-                case 'array-body':
                 case 'function-call':
-                case 'object-body':
                 case 'type-definition': {
                     scopes.pop();
                 }

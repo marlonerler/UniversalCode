@@ -1,27 +1,16 @@
-switch: 123:
-    case: 123, 234:
-        'something'
-    end case;
+struct Person:
+    string name;
+    int age;
 
-    case: 567:
-        'something'
-    end case;
+    method greet: returns string;
+end struct;
 
-    default:
-        'something'
-    end case;
-end switch;
+constant Person: john = object:
+    name = 'John';
+    age = 42;
 
-function test: returns void:
-    return;
-    return: void;
-end fn;
-
-[console log] 123;
-'Hello \{123\}'
-1 + (2 + 3);
-{
-    function test() {
-        console.log('Hello!);
-    \}
-}
+    method greet: returns string:
+        constant string: name = [self.name];
+        return: 'Hello, $name!';
+    end method;
+end object;

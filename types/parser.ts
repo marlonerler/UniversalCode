@@ -202,25 +202,22 @@ export type Unit =
           commandName: string;
       }
     | {
-          type: 'function-type-definition';
-      }
-    | {
-          type: 'function-type-definition-return-type';
-          returnType: string;
-      }
-    | {
           type: 'function-head';
           name: string;
       }
     | {
           type: 'method-head';
+          name: string;
       }
     | {
-          type: 'function-return-type';
+          type: 'return-type-definition';
           returnType: string;
       }
     | {
-          type: 'function-body-start';
+          type: 'function-or-method-body-start';
+      }
+    | {
+          type: 'function-or-method-definition-end';
       }
     | {
           type: 'function-call-start';
@@ -291,9 +288,6 @@ export type Unit =
           name: string;
       }
     | {
-          type: 'struct-end';
-      }
-    | {
           type: 'type-definition-start';
           name: string;
       }
@@ -313,6 +307,7 @@ export type ScopeType =
     | 'function-call'
     | 'function-body'
     | 'loop-body'
+    | 'method-body'
     | 'object-body'
     | 'struct-body'
     | 'switch-head'
@@ -323,7 +318,8 @@ export const scopesWithFunctionGrammar: ScopeType[] = [
     'case-body',
     'control-flow-body',
     'if-block-body',
-    'loop-body',
     'function-body',
+    'loop-body',
+    'method-body',
     'switch-body',
 ];
