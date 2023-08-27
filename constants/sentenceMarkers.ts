@@ -1,3 +1,9 @@
+export const SENTENCE_MARKER_PARENTHESES_START: string = '(';
+export const SENTENCE_MARKER_PARENTHESES_END: string = ')';
+
+export const SENTENCE_MARKER_TARGET_LANGUAGE_START: string = '{';
+export const SENTENCE_MARKER_TARGET_LANGUAGE_END: string = '}';
+
 export const SENTENCE_MARKER_CLOSING: string = ';';
 export const SENTENCE_MARKER_OPENING: string = ':';
 export const SENTENCE_MARKER_ENUMERATING: string = ',';

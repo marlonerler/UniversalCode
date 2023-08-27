@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 import {
+    CHARACTER_ESCAPE,
+    CHARACTER_INDENT,
+    CHARACTER_SPACE,
+} from '../constants/characters';
+import {
     ERROR_NO_CALCULATION_TYPE,
     ERROR_NO_SENTENCE_RECOGNITION,
     ERROR_NO_SENTENCE_TYPE,
@@ -24,7 +29,11 @@ import {
     SENTENCE_MARKER_ENUMERATING,
     SENTENCE_MARKER_NORMAL_STRING,
     SENTENCE_MARKER_OPENING,
+    SENTENCE_MARKER_PARENTHESES_END,
+    SENTENCE_MARKER_PARENTHESES_START,
     SENTENCE_MARKER_SAFE_STRING,
+    SENTENCE_MARKER_TARGET_LANGUAGE_END,
+    SENTENCE_MARKER_TARGET_LANGUAGE_START,
 } from '../constants/sentenceMarkers';
 import {
     CalculationType,
@@ -49,7 +58,7 @@ let trailingSentence: Sentence | undefined;
 let markerOfCurrentString: string | undefined;
 let isCurrentlyInsideAccessor: boolean;
 let isCurrentlyInsideComment: boolean;
-let isCurrentlyInsideParentheses: boolean;
+let isCurrentlyInsideTargetLanguageCode: boolean;
 let isEscaping: boolean;
 
 // tracking loop
@@ -89,10 +98,12 @@ export function getSentencesFromCode(code: string): Sentence[] {
 
         let didRecognizeCharacter: boolean = false;
         const parseProcedure: CharacterRecognitionFunction[] = [
+            recognizeTargetLanguageCode,
             recognizeComments,
             recognizeStrings,
             recognizeCalculations,
             recognizeBooleanOperators,
+            recognizeParantheses,
             recognizeAccessors,
             recognizeSentences,
             recognizeSentenceParts,
@@ -153,26 +164,28 @@ type CharacterRecognitionFunction = () => boolean;
 
 function recognizeAccessors(): boolean {
     if (isCurrentlyInsideAccessor == true) {
-        if (currentCharacter == SENTENCE_MARKER_ACCESSOR_END) {
-            isCurrentlyInsideAccessor = false;
-            closeCurrentSentence(true);
-        } else {
-            charactersOfCurrentSentence.push(currentCharacter);
+        switch (currentCharacter) {
+            case SENTENCE_MARKER_ACCESSOR_END: {
+                isCurrentlyInsideAccessor = false;
+                currentSentenceType = 'accessor';
+                closeCurrentSentence(true);
+            }
+            default: {
+                charactersOfCurrentSentence.push(currentCharacter);
+            }
         }
-
-        return true;
-    } else {
-        if (currentCharacter != SENTENCE_MARKER_ACCESSOR_START) return false;
-
-        currentSentenceType = 'accessor';
-        isCurrentlyInsideAccessor = true;
         return true;
     }
+
+    if (currentCharacter != SENTENCE_MARKER_ACCESSOR_START) return false;
+
+    isCurrentlyInsideAccessor = true;
+    return true;
 }
 
 function recognizeAssignments(): boolean {
-    if (leadingCharacter != ' ') return false;
-    if (trailingCharacter != ' ') return false;
+    if (leadingCharacter != CHARACTER_SPACE) return false;
+    if (trailingCharacter != CHARACTER_SPACE) return false;
     if (currentCharacter != SENTENCE_MARKER_ASSIGNMENT) return false;
 
     currentSentenceType = 'assignment-key';
@@ -328,6 +341,25 @@ function recognizeComments(): boolean {
     }
 }
 
+function recognizeParantheses(): boolean {
+    switch (currentCharacter) {
+        case SENTENCE_MARKER_PARENTHESES_START: {
+            currentSentenceType = 'parentheses-start';
+            break;
+        }
+        case SENTENCE_MARKER_PARENTHESES_END: {
+            currentSentenceType = 'parentheses-end';
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    closeCurrentSentence(true);
+    return true;
+}
+
 function recognizeSentences(): boolean {
     switch (currentCharacter) {
         case SENTENCE_MARKER_CLOSING: {
@@ -344,7 +376,6 @@ function recognizeSentences(): boolean {
     }
 
     closeCurrentSentence(true);
-
     return true;
 }
 
@@ -398,10 +429,41 @@ function recognizeStrings(): boolean {
     return true;
 }
 
+function recognizeTargetLanguageCode(): boolean {
+    if (isCurrentlyInsideTargetLanguageCode == true) {
+        switch (currentCharacter) {
+            case CHARACTER_ESCAPE: {
+                //do not add escaping characcter back in
+                if (trailingCharacter == SENTENCE_MARKER_TARGET_LANGUAGE_END)
+                    return true;
+                return false;
+            }
+            case SENTENCE_MARKER_TARGET_LANGUAGE_END: {
+                if (isEscaping) return false;
+
+                currentSentenceType = 'target-language-code';
+                closeCurrentSentence(false);
+                return true;
+            }
+            default: {
+                charactersOfCurrentSentence.push(currentCharacter);
+            }
+        }
+
+        return true;
+    }
+
+    if (currentCharacter != SENTENCE_MARKER_TARGET_LANGUAGE_START) return false;
+    if (isEscaping == true) return false;
+
+    isCurrentlyInsideTargetLanguageCode = true;
+    return true;
+}
+
 function recognizeOther(): boolean {
     switch (currentCharacter) {
-        case ' ':
-        case '\t': {
+        case CHARACTER_SPACE:
+        case CHARACTER_INDENT: {
             currentCharacter = ' ';
         }
     }

@@ -76,7 +76,10 @@ export type SentenceType =
     | 'enumerating'
     | 'normal-string'
     | 'opening'
-    | 'safe-string';
+    | 'parentheses-start'
+    | 'parentheses-end'
+    | 'safe-string'
+    | 'target-language-code';
 
 export interface HeadAndBody {
     head: string[];
@@ -89,6 +92,10 @@ export type Unit =
           text: string;
       }
     | {
+          type: 'target-language-code';
+          code: string;
+      }
+    | {
           type: 'closing';
       }
     | {
@@ -98,6 +105,12 @@ export type Unit =
     | {
           type: 'calculation';
           calculationType: CalculationType;
+      }
+    | {
+          type: 'parentheses-start';
+      }
+    | {
+          type: 'parentheses-end';
       }
     | {
           type: 'boolean';

@@ -1,8 +1,8 @@
-checkpoint myLoop:
-while: a == b, do:
-    continue;
-    continue: myLoop;
-end loop;
-
-count: myArray, take item:
-end loop;
+[console log: 123];
+'Hello \{123\}'
+1 + (2 + 3);
+{
+    function test() {
+        console.log('Hello!);
+    \}
+}

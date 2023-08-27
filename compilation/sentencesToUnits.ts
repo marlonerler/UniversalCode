@@ -66,6 +66,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
 
         let didRecognizeSentence: boolean = false;
         const reognitionFunctions: SentenceRecognitionFunction[] = [
+            recognizeTargetLanguageCode,
+
             recognizeComment,
 
             recognizeBoolean,
@@ -76,6 +78,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeAccessor,
             recognizeCompoundDataTypes,
 
+            recognizeParantheses,
             recognizeBooleanOperator,
             recognizeCalculation,
 
@@ -765,6 +768,20 @@ function recognizeOpeningKeywords(): boolean {
     return true;
 }
 
+function recognizeParantheses(): boolean {
+    switch (currentSentenceType) {
+        case 'parentheses-start':
+        case 'parentheses-end': {
+            currentUnit = {
+                type: currentSentenceType,
+            };
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function recognizeReferences(): boolean {
     if (currentSentenceCharacters.length == 0) return false;
 
@@ -791,6 +808,17 @@ function recognizeString(): boolean {
     currentUnit = {
         type: currentSentenceType,
         content: currentSentenceCharacters.join(''),
+    };
+
+    return true;
+}
+
+function recognizeTargetLanguageCode(): boolean {
+    if (currentSentenceType != 'target-language-code') return false;
+
+    currentUnit = {
+        type: 'target-language-code',
+        code: currentSentenceText,
     };
 
     return true;

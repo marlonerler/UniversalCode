@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 
+import {
+    CHARACTER_INDENT,
+    CHARACTER_NEWLINE,
+    CHARACTER_SPACE,
+} from '../constants/characters';
+
 export function checkIfCharacterIsSpace(character: string): boolean {
-    return character == ' ' || character == '\t' || character == '\n';
+    return (
+        character == CHARACTER_SPACE ||
+        character == CHARACTER_INDENT ||
+        character == CHARACTER_NEWLINE
+    );
 }
 
 export function removeOuterSpacesFromCharacterArray(
