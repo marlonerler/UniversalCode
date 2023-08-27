@@ -1,9 +1,15 @@
-struct Person:
-    mutable string: name;
-    mutable int: age;
-end struct;
+class Person:
+    initialize: mutable string: name;
+    initialize: mutable int: age;
 
-constant Person: john = object:
-    name = 'John';
-    age = 42;
-end object;
+    method greet: returns string:
+        constant string: name = [self.name];
+        return 'Hello, $name!';
+    end method;
+end class;
+
+constant Person: john = new Person: 'John', 42;
+call something: 1, 2;
+
+new Person;
+call something;

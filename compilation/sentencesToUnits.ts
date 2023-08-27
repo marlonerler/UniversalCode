@@ -94,7 +94,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeFunctionOrMethodDefinition,
 
             recognizeEndMarkers,
-            recognizeReferences,
+            recognizeReference,
+            recognizeCall,
             recognizeMultiwordUnit,
             recognizeTwoWordCluster,
         ];
@@ -144,7 +145,7 @@ function processClosingMultiwordUnit(
     currentSentenceBody: string,
 ): boolean {
     switch (currentSentenceHead) {
-        case 'import': {
+        case 'include': {
             currentUnit = {
                 type: 'import',
                 sourceName: currentSentenceBody,
@@ -197,19 +198,20 @@ function processOpeningMultiwordUnit(
     currentSentenceBody: string,
 ): boolean {
     switch (currentSentenceHead) {
-        case 'call': {
-            currentUnit = {
-                type: 'function-call-start',
-                functionName: currentSentenceBody,
-            };
-            scopes.push('function-call');
-            break;
-        }
         case 'checkpoint': {
             currentUnit = {
                 type: 'checkpoint',
                 name: currentSentenceBody,
             };
+            break;
+        }
+        case 'class': {
+            currentUnit = {
+                type: 'class-head',
+                name: currentSentenceBody,
+            };
+
+            scopes.push('class-body');
             break;
         }
         case 'function': {
@@ -368,6 +370,34 @@ function recognizeCalculation(): boolean {
     return true;
 }
 
+function recognizeCall(): boolean {
+    if (currentSentenceType != 'closing' && currentSentenceType != 'opening') return false;
+
+    switch (currentSentenceHead) {
+        case 'call': {
+            currentUnit = {
+                type: 'function-call-start',
+                name: currentSentenceBody,
+            };
+            scopes.push('function-call');
+            break;
+        }
+        case 'new': {
+            currentUnit = {
+                type: 'class-call-start',
+                name: currentSentenceBody,
+            };
+            scopes.push('function-call');
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function recognizeClosingKeywords(): boolean {
     if (currentSentenceType != 'closing') return false;
 
@@ -469,6 +499,7 @@ function recognizeEndMarkers(): boolean {
     const endingScopes: { [key: string]: ScopeType } = {
         array: 'array-body',
         case: 'case-body',
+        class: 'class-body',
         command: 'command-body',
         function: 'function-body',
         method: 'method-body',
@@ -670,6 +701,15 @@ function recognizeOpeningKeywords(): boolean {
 
             break;
         }
+        case 'initialize': {
+            if (getCurrentScopeType() != 'class-body') return false;
+
+            currentUnit = {
+                type: 'class-property-initializer',
+            };
+
+            break;
+        }
         case 'return': {
             currentUnit = {
                 type: 'return-keyword',
@@ -720,7 +760,7 @@ function recognizeParantheses(): boolean {
     return false;
 }
 
-function recognizeReferences(): boolean {
+function recognizeReference(): boolean {
     if (currentSentenceCharacters.length == 0) return false;
 
     for (let i: number = 0; i < currentSentenceCharacters.length; i++) {

@@ -239,7 +239,7 @@ export type Unit =
       }
     | {
           type: 'function-call-start';
-          functionName: string;
+          name: string;
       }
     | {
           type: 'function-call-end';
@@ -306,6 +306,17 @@ export type Unit =
           name: string;
       }
     | {
+          type: 'class-head';
+          name: string;
+      }
+    | {
+          type: 'class-property-initializer';
+      }
+    | {
+          type: 'class-call-start';
+          name: string;
+      }
+    | {
           type: 'type-definition-start';
           name: string;
       }
@@ -320,6 +331,7 @@ export type ScopeType =
     | 'assignment'
     | 'case-head'
     | 'case-body'
+    | 'class-body'
     | 'control-flow-body'
     | 'command-body'
     | 'if-block-body'
