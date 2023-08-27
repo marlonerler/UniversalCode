@@ -5,6 +5,28 @@ import {
     ERROR_NO_SENTENCE_TYPE,
 } from '../constants/errors';
 import {
+    SENTENCE_MARKER_ACCESSOR_END,
+    SENTENCE_MARKER_ACCESSOR_START,
+    SENTENCE_MARKER_ASSIGNMENT,
+    SENTENCE_MARKER_BOOLEAN_AND,
+    SENTENCE_MARKER_BOOLEAN_NOT,
+    SENTENCE_MARKER_BOOLEAN_OR,
+    SENTENCE_MARKER_CALCULATION_ADD,
+    SENTENCE_MARKER_CALCULATION_COMPARISON_EQUAL,
+    SENTENCE_MARKER_CALCULATION_COMPARISON_GREATER,
+    SENTENCE_MARKER_CALCULATION_COMPARISON_LOWER,
+    SENTENCE_MARKER_CALCULATION_COMPARISON_NOT,
+    SENTENCE_MARKER_CALCULATION_DIVIDE,
+    SENTENCE_MARKER_CALCULATION_MULTIPLY,
+    SENTENCE_MARKER_CALCULATION_SUBTRACT,
+    SENTENCE_MARKER_CLOSING,
+    SENTENCE_MARKER_COMMENT,
+    SENTENCE_MARKER_ENUMERATING,
+    SENTENCE_MARKER_NORMAL_STRING,
+    SENTENCE_MARKER_OPENING,
+    SENTENCE_MARKER_SAFE_STRING,
+} from '../constants/sentenceMarkers';
+import {
     CalculationType,
     Sentence,
     SentenceType,
@@ -131,7 +153,7 @@ type CharacterRecognitionFunction = () => boolean;
 
 function recognizeAccessors(): boolean {
     if (isCurrentlyInsideAccessor == true) {
-        if (currentCharacter == ']') {
+        if (currentCharacter == SENTENCE_MARKER_ACCESSOR_END) {
             isCurrentlyInsideAccessor = false;
             closeCurrentSentence(true);
         } else {
@@ -140,7 +162,7 @@ function recognizeAccessors(): boolean {
 
         return true;
     } else {
-        if (currentCharacter != '[') return false;
+        if (currentCharacter != SENTENCE_MARKER_ACCESSOR_START) return false;
 
         currentSentenceType = 'accessor';
         isCurrentlyInsideAccessor = true;
@@ -151,7 +173,7 @@ function recognizeAccessors(): boolean {
 function recognizeAssignments(): boolean {
     if (leadingCharacter != ' ') return false;
     if (trailingCharacter != ' ') return false;
-    if (currentCharacter != '=') return false;
+    if (currentCharacter != SENTENCE_MARKER_ASSIGNMENT) return false;
 
     currentSentenceType = 'assignment-key';
     closeCurrentSentence(true);
@@ -160,7 +182,7 @@ function recognizeAssignments(): boolean {
 }
 
 function recognizeBooleanOperators(): boolean {
-    if (currentCharacter == '!') {
+    if (currentCharacter == SENTENCE_MARKER_BOOLEAN_NOT) {
         currentSentenceType = 'boolean-operator-not';
         closeCurrentSentence(true);
         return true;
@@ -169,11 +191,11 @@ function recognizeBooleanOperators(): boolean {
     if (currentCharacter == trailingCharacter) {
         let sentenceType: SentenceType | undefined = undefined;
         switch (currentCharacter) {
-            case '&': {
+            case SENTENCE_MARKER_BOOLEAN_AND: {
                 sentenceType = 'boolean-operator-and';
                 break;
             }
-            case '|': {
+            case SENTENCE_MARKER_BOOLEAN_OR: {
                 sentenceType = 'boolean-operator-or';
                 break;
             }
@@ -206,35 +228,35 @@ function recognizeCalculations(): boolean {
     let comparisonDraft: string | undefined = undefined;
 
     switch (currentCharacter) {
-        case '+': {
+        case SENTENCE_MARKER_CALCULATION_ADD: {
             calculationDraft = 'add';
             break;
         }
-        case '-': {
+        case SENTENCE_MARKER_CALCULATION_SUBTRACT: {
             calculationDraft = 'subtract';
             break;
         }
-        case '*': {
+        case SENTENCE_MARKER_CALCULATION_MULTIPLY: {
             calculationDraft = 'multiply';
             break;
         }
-        case '/': {
+        case SENTENCE_MARKER_CALCULATION_DIVIDE: {
             calculationDraft = 'divide';
             break;
         }
-        case '<': {
+        case SENTENCE_MARKER_CALCULATION_COMPARISON_LOWER: {
             comparisonDraft = 'lower';
             break;
         }
-        case '>': {
+        case SENTENCE_MARKER_CALCULATION_COMPARISON_GREATER: {
             comparisonDraft = 'greater';
             break;
         }
-        case '!': {
+        case SENTENCE_MARKER_CALCULATION_COMPARISON_NOT: {
             comparisonDraft = 'not';
             break;
         }
-        case '=': {
+        case SENTENCE_MARKER_CALCULATION_COMPARISON_EQUAL: {
             if (trailingCharacterIsEqualitySign == false) break;
             comparisonDraft = 'is';
             break;
@@ -295,7 +317,7 @@ function recognizeComments(): boolean {
         }
 
         return true;
-    } else if (currentCharacter == '#') {
+    } else if (currentCharacter == SENTENCE_MARKER_COMMENT) {
         //delete start of previous sentence and start comment
         resetCurrentSentence();
         isCurrentlyInsideComment = true;
@@ -307,16 +329,17 @@ function recognizeComments(): boolean {
 }
 
 function recognizeSentences(): boolean {
-    if (currentCharacter != ';' && currentCharacter != ':') return false;
-
     switch (currentCharacter) {
-        case ';': {
+        case SENTENCE_MARKER_CLOSING: {
             currentSentenceType = 'closing';
             break;
         }
-        case ':': {
+        case SENTENCE_MARKER_OPENING: {
             currentSentenceType = 'opening';
             break;
+        }
+        default: {
+            return false;
         }
     }
 
@@ -326,7 +349,7 @@ function recognizeSentences(): boolean {
 }
 
 function recognizeSentenceParts(): boolean {
-    if (currentCharacter != ',') return false;
+    if (currentCharacter != SENTENCE_MARKER_ENUMERATING) return false;
 
     currentSentenceType = 'enumerating';
     closeCurrentSentence(true);
@@ -336,12 +359,13 @@ function recognizeSentenceParts(): boolean {
 
 function recognizeStrings(): boolean {
     if (
-        (currentCharacter != '"' && currentCharacter != "'") ||
+        (currentCharacter != SENTENCE_MARKER_SAFE_STRING &&
+            currentCharacter != SENTENCE_MARKER_NORMAL_STRING) ||
         isEscaping == true
     ) {
         // character is not string marker
 
-        // add character if inside string
+        // cancel if not in string
         if (markerOfCurrentString == undefined) return false;
 
         charactersOfCurrentSentence.push(currentCharacter);
@@ -349,11 +373,11 @@ function recognizeStrings(): boolean {
     }
 
     switch (currentCharacter) {
-        case '"': {
+        case SENTENCE_MARKER_SAFE_STRING: {
             currentSentenceType = 'safe-string';
             break;
         }
-        case "'": {
+        case SENTENCE_MARKER_NORMAL_STRING: {
             currentSentenceType = 'normal-string';
             break;
         }

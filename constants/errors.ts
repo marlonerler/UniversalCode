@@ -1,9 +1,9 @@
-export const ERROR_NO_SENTENCE_TYPE = (characterIndex: number) =>
+export const ERROR_NO_SENTENCE_TYPE = (characterIndex: number): string =>
     `Could not determine type of sentence (character at index ${characterIndex})`;
 
-export const ERROR_NO_CHARACTER_RECOGNITION = (characteIndex: number) =>
+export const ERROR_NO_CHARACTER_RECOGNITION = (characteIndex: number): string =>
     `Could not recognize role of character at index ${characteIndex}`;
-export const ERROR_NO_SENTENCE_RECOGNITION = (phraseIndex: number) =>
+export const ERROR_NO_SENTENCE_RECOGNITION = (phraseIndex: number): string =>
     `Could not recognize role of phrase at index ${phraseIndex}`;
 
 export const ERROR_NO_CALCULATION_TYPE = (type: string) =>
