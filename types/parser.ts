@@ -145,7 +145,6 @@ export type Unit =
           accessedItem: string;
           members: string[];
           methodName: string | undefined;
-          methodParameters: string[];
       }
     | {
           type: 'array-start';

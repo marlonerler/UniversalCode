@@ -321,12 +321,9 @@ function recognizeAccessor(): boolean {
     let currentMemberCharacters: string[] = [];
 
     let methodNameCharacters: string[] = [];
-    let methodParameters: string[] = [];
-    let currentMethodParameterCharacters: string[] = [];
 
     let isDefiningMembers: boolean = false;
     let isDefiningMethodName: boolean = false;
-    let isDefiningMethodParameters: boolean = false;
 
     for (let i: number = 0; i < currentSentenceCharacters.length; i++) {
         const currentCharacter: string = currentSentenceCharacters[i];
@@ -340,33 +337,13 @@ function recognizeAccessor(): boolean {
         const isSpace: boolean = currentCharacter == ' ';
         const isPeriod: boolean = currentCharacter == '.';
         const isComma: boolean = currentCharacter == ',';
-        const isColon: boolean = currentCharacter == ':';
 
         const isNotWordCharacter =
             isSpace == true ||
             isPeriod == true ||
-            isComma == true ||
-            isColon == true;
+            isComma == true
 
-        if (isDefiningMethodParameters == true) {
-            if (isSpace == true) continue;
-            if (isComma == false) {
-                currentMethodParameterCharacters.push(currentCharacter);
-            }
-
-            if (isComma == true || isLastCharacter == true) {
-                methodParameters.push(
-                    currentMethodParameterCharacters.join(''),
-                );
-                currentMethodParameterCharacters = [];
-                continue;
-            }
-        } else if (isDefiningMethodName == true) {
-            if (isColon == true) {
-                isDefiningMethodParameters = true;
-                continue;
-            }
-
+        if (isDefiningMethodName == true) {
             methodNameCharacters.push(currentCharacter);
         } else if (isDefiningMembers) {
             if (isSpace == true) {
@@ -409,7 +386,6 @@ function recognizeAccessor(): boolean {
         accessedItem: accessedItemCharacters.join(''),
         members: members,
         methodName,
-        methodParameters,
     };
 
     return true;
