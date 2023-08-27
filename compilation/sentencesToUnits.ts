@@ -82,8 +82,8 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeBooleanOperator,
             recognizeCalculation,
 
-            recognizeOpeningKeywords,
             recognizeClosingKeywords,
+            recognizeOpeningKeywords,
 
             recognizeVariableDeclaration,
             recognizeAssignment,
@@ -107,8 +107,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
         if (didRecognizeSentence == false) {
             useFallbackUnit();
         }
-        // process unit for edge cases
-        catchOther();
+        catchEdgeCases();
         if (currentUnit != undefined) {
             units.push(currentUnit);
         }
@@ -189,27 +188,6 @@ function processClosingMultiwordUnit(
     return true;
 }
 
-function processEnumeratingMultiwordUnit(
-    currentSentenceHead: string,
-    currentSentenceBody: string,
-): boolean {
-    switch (currentSentenceHead) {
-        case 'case': {
-            currentUnit = {
-                type: 'case-definition',
-                referenceValue: currentSentenceBody,
-            };
-
-            break;
-        }
-        default: {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 function processOpeningMultiwordUnit(
     currentSentenceHead: string,
     currentSentenceBody: string,
@@ -221,19 +199,6 @@ function processOpeningMultiwordUnit(
                 functionName: currentSentenceBody,
             };
             scopes.push('function-call');
-            break;
-        }
-        case 'case': {
-            currentUnit = {
-                type: 'case-definition',
-                referenceValue: currentSentenceBody,
-            };
-
-            trailingUnit = {
-                type: 'case-body-start',
-            };
-
-            scopes.push('case-body');
             break;
         }
         case 'checkpoint': {
@@ -257,15 +222,6 @@ function processOpeningMultiwordUnit(
             };
 
             scopes.push('struct-body');
-            break;
-        }
-        case 'switch': {
-            currentUnit = {
-                type: 'switch-head',
-                variable: currentSentenceBody,
-            };
-
-            scopes.push('switch-body');
             break;
         }
         case 'returns': {
@@ -339,9 +295,7 @@ function recognizeAccessor(): boolean {
         const isComma: boolean = currentCharacter == ',';
 
         const isNotWordCharacter =
-            isSpace == true ||
-            isPeriod == true ||
-            isComma == true
+            isSpace == true || isPeriod == true || isComma == true;
 
         if (isDefiningMethodName == true) {
             methodNameCharacters.push(currentCharacter);
@@ -460,6 +414,12 @@ function recognizeClosingKeywords(): boolean {
         case 'continue': {
             currentUnit = {
                 type: 'continue-keyword',
+            };
+            break;
+        }
+        case 'return': {
+            currentUnit = {
+                type: 'return-keyword',
             };
             break;
         }
@@ -621,11 +581,6 @@ function recognizeMultiwordUnit(): boolean {
             currentSentenceHead,
             currentSentenceBody,
         );
-    } else if (currentSentenceType == 'enumerating') {
-        return processEnumeratingMultiwordUnit(
-            currentSentenceHead,
-            currentSentenceBody,
-        );
     }
 
     return false;
@@ -640,6 +595,14 @@ function recognizeOpeningKeywords(): boolean {
             currentUnit = {
                 type: 'break-keyword',
             };
+            break;
+        }
+        case 'case': {
+            currentUnit = {
+                type: 'case-head',
+            };
+
+            scopes.push('case-head');
             break;
         }
         case 'continue': {
@@ -664,6 +627,19 @@ function recognizeOpeningKeywords(): boolean {
                 type: 'item-loop-head',
                 loopType,
             };
+            break;
+        }
+        case 'default': {
+            currentUnit = {
+                type: 'default-case',
+            };
+
+            trailingUnit = {
+                type: 'case-body-start',
+            };
+
+            scopes.push('case-body');
+
             break;
         }
         case 'do': {
@@ -720,6 +696,14 @@ function recognizeOpeningKeywords(): boolean {
             currentUnit = {
                 type: 'return-keyword',
             };
+            break;
+        }
+        case 'switch': {
+            currentUnit = {
+                type: 'switch-head',
+            };
+
+            scopes.push('switch-head');
             break;
         }
         case 'then': {
@@ -833,22 +817,62 @@ function recognizeVariableDeclaration(): boolean {
     return true;
 }
 
-function catchOther(): false {
-    if (currentSentenceType == 'closing') {
-        switch (getCurrentScopeType()) {
-            case 'assignment':
-            case 'array-body':
-            case 'function-call':
-            case 'object-body':
-            case 'type-definition': {
-                scopes.pop();
+function catchEdgeCases(): void {
+    const currentScopeType: ScopeType = getCurrentScopeType();
+
+    switch (currentSentenceType) {
+        case 'closing': {
+            switch (currentScopeType) {
+                case 'assignment':
+                case 'array-body':
+                case 'function-call':
+                case 'object-body':
+                case 'type-definition': {
+                    scopes.pop();
+                }
             }
+
+            trailingUnit = {
+                type: 'closing',
+            };
+
+            break;
         }
+        case 'opening': {
+            switch (currentScopeType) {
+                case 'switch-head': {
+                    if (
+                        currentUnit != undefined &&
+                        currentUnit.type == 'switch-head'
+                    )
+                        return;
 
-        trailingUnit = {
-            type: 'closing',
-        };
+                    trailingUnit = {
+                        type: 'switch-body-start',
+                    };
+                    scopes.pop();
+                    scopes.push('switch-body');
+
+                    break;
+                }
+                case 'case-head': {
+                    if (
+                        currentUnit != undefined &&
+                        currentUnit.type == 'case-head'
+                    )
+                        return;
+
+                    trailingUnit = {
+                        type: 'case-body-start',
+                    };
+                    scopes.pop();
+                    scopes.push('case-body');
+
+                    break;
+                }
+            }
+
+            break;
+        }
     }
-
-    return false;
 }

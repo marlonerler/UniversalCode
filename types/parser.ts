@@ -273,11 +273,15 @@ export type Unit =
       }
     | {
           type: 'switch-head';
-          variable: string;
       }
     | {
-          type: 'case-definition';
-          referenceValue: string;
+          type: 'switch-body-start';
+      }
+    | {
+          type: 'case-head';
+      }
+    | {
+          type: 'default-case';
       }
     | {
           type: 'case-body-start';
@@ -301,6 +305,7 @@ export type Unit =
 export type ScopeType =
     | 'array-body'
     | 'assignment'
+    | 'case-head'
     | 'case-body'
     | 'control-flow-body'
     | 'command-body'
@@ -310,6 +315,7 @@ export type ScopeType =
     | 'loop-body'
     | 'object-body'
     | 'struct-body'
+    | 'switch-head'
     | 'switch-body'
     | 'type-definition';
 

@@ -1,3 +1,22 @@
+switch: 123:
+    case: 123, 234:
+        'something'
+    end case;
+
+    case: 567:
+        'something'
+    end case;
+
+    default:
+        'something'
+    end case;
+end switch;
+
+function test: returns void:
+    return;
+    return: void;
+end fn;
+
 [console log] 123;
 'Hello \{123\}'
 1 + (2 + 3);
