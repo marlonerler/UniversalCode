@@ -210,13 +210,6 @@ export type Unit =
           dataType: string;
       }
     | {
-          type: 'command-head';
-      }
-    | {
-          type: 'command';
-          commandName: string;
-      }
-    | {
           type: 'function-head';
           name: string;
       }
@@ -333,7 +326,6 @@ export type ScopeType =
     | 'case-body'
     | 'class-body'
     | 'control-flow-body'
-    | 'command-body'
     | 'if-block-body'
     | 'function-call'
     | 'function-body'

@@ -88,9 +88,6 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
             recognizeVariableDeclaration,
             recognizeAssignment,
 
-            recognizeCommandHead,
-            recognizeCommands,
-
             recognizeFunctionOrMethodDefinition,
 
             recognizeEndMarkers,
@@ -429,33 +426,6 @@ function recognizeClosingKeywords(): boolean {
     return true;
 }
 
-function recognizeCommandHead(): boolean {
-    if (checkIfScopeUsesFunctionGrammar() == false) return false;
-    if (currentSentenceType != 'opening') return false;
-
-    const sentencceText = currentSentenceCharacters.join('');
-    if (sentencceText != 'command') return false;
-
-    currentUnit = {
-        type: 'command-head',
-    };
-
-    scopes.push('command-body');
-    return true;
-}
-
-function recognizeCommands(): boolean {
-    if (getCurrentScopeType() != 'command-body') return false;
-    if (currentSentenceType != 'opening') return false;
-
-    currentUnit = {
-        type: 'command',
-        commandName: currentSentenceText,
-    };
-
-    return true;
-}
-
 function recognizeComment(): boolean {
     if (currentSentenceType != 'comment') return false;
 
@@ -500,7 +470,6 @@ function recognizeEndMarkers(): boolean {
         array: 'array-body',
         case: 'case-body',
         class: 'class-body',
-        command: 'command-body',
         function: 'function-body',
         method: 'method-body',
         loop: 'loop-body',

@@ -1,15 +1,14 @@
-class Person:
-    initialize: mutable string: name;
-    initialize: mutable int: age;
+function drawInterface: returns void:
+    call clearScreen;
 
-    method greet: returns string:
-        constant string: name = [self.name];
-        return 'Hello, $name!';
-    end method;
-end class;
+    constant Dimensions: screenSize = call getScreenSize;
 
-constant Person: john = new Person: 'John', 42;
-call something: 1, 2;
+    call goToRow: 5;
+    call goToColumn: 10;
+    call writeText: 'Hello, world!';
 
-new Person;
-call something;
+    constant Box: myBox = new Box: 'Example box', 20, 5;
+    [myBox addLine: 'First line in box'];
+    [myBox addLine: 'Second line in box'];
+    [myBox insertAt: 6, 10];
+end function;
