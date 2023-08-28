@@ -8,7 +8,12 @@ export const SENTENCE_MARKER_CLOSING: string = ';';
 export const SENTENCE_MARKER_OPENING: string = ':';
 export const SENTENCE_MARKER_ENUMERATING: string = ',';
 
-export const SENTENCE_MARKER_COMMENT: string = '#';
+export const SENTENCE_MARKER_COMMENT_START: string = '#';
+export const SENTENCE_MARKER_COMMENT_END: string = '\n';
+
+export const SENTENCE_MARKER_COMPILER_FLAG_START: string = '@';
+export const SENTENCE_MARKER_COMPILER_FLAG_END: string = '\n';
+
 export const SENTENCE_MARKER_NORMAL_STRING: string = '\'';
 export const SENTENCE_MARKER_SAFE_STRING: string = '"';
 

@@ -76,6 +76,7 @@ export type SentenceType =
     | 'accessor-end'
     | 'assignment-key'
     | 'comment'
+    | 'compiler-flag'
     | 'closing'
     | 'enumerating'
     | 'normal-string'
@@ -182,6 +183,10 @@ export type Unit =
       }
     | {
           type: 'comment';
+          content: string;
+      }
+    | {
+          type: 'compiler-flag';
           content: string;
       }
     | {

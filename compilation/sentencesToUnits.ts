@@ -68,7 +68,7 @@ export function getUnitsFromSentences(sentences: Sentence[]): Unit[] {
         const reognitionFunctions: SentenceRecognitionFunction[] = [
             recognizeTargetLanguageCode,
 
-            recognizeComment,
+            recognizeCommentOrCompilerFlag,
 
             recognizeBoolean,
             recognizeFalsyValue,
@@ -368,7 +368,8 @@ function recognizeCalculation(): boolean {
 }
 
 function recognizeCall(): boolean {
-    if (currentSentenceType != 'closing' && currentSentenceType != 'opening') return false;
+    if (currentSentenceType != 'closing' && currentSentenceType != 'opening')
+        return false;
 
     switch (currentSentenceHead) {
         case 'call': {
@@ -426,13 +427,21 @@ function recognizeClosingKeywords(): boolean {
     return true;
 }
 
-function recognizeComment(): boolean {
-    if (currentSentenceType != 'comment') return false;
+function recognizeCommentOrCompilerFlag(): boolean {
+    switch (currentSentenceType) {
+        case 'comment':
+        case 'compiler-flag': {
+            currentUnit = {
+                type: currentSentenceType,
+                content: currentSentenceCharacters.join(''),
+            };
 
-    currentUnit = {
-        type: 'comment',
-        content: currentSentenceCharacters.join(''),
-    };
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
 
     return true;
 }

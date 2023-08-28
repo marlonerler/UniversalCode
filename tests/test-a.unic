@@ -1,14 +1,2 @@
-function drawInterface: returns void:
-    call clearScreen;
-
-    constant Dimensions: screenSize = call getScreenSize;
-
-    call goToRow: 5;
-    call goToColumn: 10;
-    call writeText: 'Hello, world!';
-
-    constant Box: myBox = new Box: 'Example box', 20, 5;
-    [myBox addLine: 'First line in box'];
-    [myBox addLine: 'Second line in box'];
-    [myBox insertAt: 6, 10];
-end function;
+# this is a comment
+@ this is a compiler flag

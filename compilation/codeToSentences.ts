@@ -28,7 +28,10 @@ import {
     SENTENCE_MARKER_CALCULATION_MULTIPLY,
     SENTENCE_MARKER_CALCULATION_SUBTRACT,
     SENTENCE_MARKER_CLOSING,
-    SENTENCE_MARKER_COMMENT,
+    SENTENCE_MARKER_COMMENT_START,
+    SENTENCE_MARKER_COMMENT_END,
+    SENTENCE_MARKER_COMPILER_FLAG_START,
+    SENTENCE_MARKER_COMPILER_FLAG_END,
     SENTENCE_MARKER_ENUMERATING,
     SENTENCE_MARKER_NORMAL_STRING,
     SENTENCE_MARKER_OPENING,
@@ -61,6 +64,7 @@ let trailingSentence: Sentence | undefined;
 let markerOfCurrentString: string | undefined;
 let isCurrentlyInsideAccessor: boolean;
 let isCurrentlyInsideComment: boolean;
+let isCurrentlyInsideCompilerFlag: boolean;
 let isCurrentlyInsideTargetLanguageCode: boolean;
 let isEscaping: boolean;
 
@@ -81,6 +85,7 @@ export function getSentencesFromCode(code: string): Sentence[] {
     // current scope/block
     markerOfCurrentString = undefined;
     isCurrentlyInsideComment = false;
+    isCurrentlyInsideCompilerFlag = false;
     isCurrentlyInsideAccessor = false;
     isEscaping = false;
 
@@ -103,6 +108,7 @@ export function getSentencesFromCode(code: string): Sentence[] {
         const parseProcedure: CharacterRecognitionFunction[] = [
             recognizeTargetLanguageCode,
             recognizeComments,
+            recognizeCompilerFlags,
             recognizeStrings,
             recognizeCalculations,
             recognizeBooleanOperators,
@@ -360,7 +366,7 @@ function recognizeCalculations(): boolean {
 
 function recognizeComments(): boolean {
     if (isCurrentlyInsideComment == true) {
-        if (currentCharacter == '\n') {
+        if (currentCharacter == SENTENCE_MARKER_COMMENT_END) {
             currentSentenceType = 'comment';
             isCurrentlyInsideComment = false;
             closeCurrentSentence(false);
@@ -369,7 +375,7 @@ function recognizeComments(): boolean {
         }
 
         return true;
-    } else if (currentCharacter == SENTENCE_MARKER_COMMENT) {
+    } else if (currentCharacter == SENTENCE_MARKER_COMMENT_START) {
         //delete start of previous sentence and start comment
         resetCurrentSentence();
         isCurrentlyInsideComment = true;
@@ -378,6 +384,29 @@ function recognizeComments(): boolean {
     } else {
         return false;
     }
+}
+
+function recognizeCompilerFlags(): boolean {
+    if (isCurrentlyInsideCompilerFlag == false) {
+        if (currentCharacter != SENTENCE_MARKER_COMPILER_FLAG_START) return false;
+
+        isCurrentlyInsideCompilerFlag = true;
+        return true;
+    }
+
+    switch (currentCharacter) {
+        case SENTENCE_MARKER_COMPILER_FLAG_END: {
+            isCurrentlyInsideCompilerFlag = false;
+            currentSentenceType = 'compiler-flag';
+            closeCurrentSentence(true);
+            break;
+        }
+        default: {
+            currentSentenceCharacters.push(currentCharacter);
+        }
+    }
+
+    return true;
 }
 
 function recognizeParantheses(): boolean {
