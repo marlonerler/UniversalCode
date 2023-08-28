@@ -59,6 +59,213 @@ export interface Import {
 
 export type LoopType = 'index' | 'item' | 'count';
 
+export type Node =
+    | {
+          type: 'target-language-code';
+          text: string;
+      }
+    | {
+          type: 'boolean-operator';
+          operatorType: BooleanOperator;
+      }
+    | {
+          type: 'calculation-operator';
+          calculationType: CalculationType;
+      }
+    | {
+          type: 'calculation';
+          items: Node[];
+      }
+    | {
+          type: 'parentheses';
+          items: Node[];
+      }
+    | {
+          type: 'boolean';
+          value: 0 | 1;
+      }
+    | {
+          type: 'undeifned';
+      }
+    | {
+          type: 'null';
+      }
+    | {
+          type: 'NaN';
+      }
+    | {
+          type: 'void';
+      }
+    | {
+          type: 'integer';
+          value: number;
+      }
+    | {
+          type: 'float';
+          value: number;
+      }
+    | {
+          type: 'reference';
+          referencedItem: string;
+      }
+    | {
+          type: 'accessor';
+          objectName: Node;
+          members: Node[];
+      }
+    | {
+          type: 'accessor-method-call';
+          accessor: Extract<Node, { type: 'accessor' }>;
+          methodName: Node;
+          parameters: Node[];
+      }
+    | {
+          type: 'array';
+          items: Node[];
+      }
+    | {
+          type: 'object';
+          items: Extract<Node, { type: 'obect-property' }>;
+      }
+    | {
+          type: 'object-property';
+          pathFromObjectRoot: string[];
+          value: Node;
+      }
+    | {
+          type: 'string';
+          stringType: 'safe' | 'normal';
+          text: string;
+      }
+    | {
+          type: 'comment';
+          text: string;
+      }
+    | {
+          type: 'compiler-flag';
+          text: string;
+      }
+    | {
+          type: 'import';
+          sourceName: string;
+      }
+    | {
+          type: 'module-name-definition';
+          moduleName: string;
+      }
+    | {
+          type: 'section-marker';
+          sectionName: string;
+      }
+    | {
+          type: 'language-definition';
+          targetLanguage: string;
+      }
+    | {
+          type: 'assignment';
+          referencedItem: string;
+          assignedValue: Node;
+      }
+    | {
+          type: 'variable-declaration';
+          isMutable: boolean;
+          dataType: string;
+          initialValue: Node;
+      }
+    | {
+          type: 'function';
+          functionName: boolean;
+          returnType: string;
+          parameters: [string, string][];
+          content: Node[];
+      }
+    | {
+          type: 'method';
+          methodName: boolean;
+          returnType: string;
+          parameters: [string, string][];
+          content: Node[];
+      }
+    | {
+          type: 'function-definition';
+          functionName: boolean;
+          returnType: string;
+          parameters: [string, string][];
+      }
+    | {
+          type: 'method-definition';
+          methodName: boolean;
+          returnType: string;
+          parameters: [string, string][];
+      }
+    | {
+          type: 'function-call';
+          functionName: boolean;
+          parameters: string[];
+      }
+    | {
+          type: 'return-keyword';
+          returnValue: Unit | undefined;
+      }
+    | {
+          type: 'checkpoint';
+          checkpointName: string;
+      }
+    | {
+          type: 'continue-keyword';
+          checkpointName: string | undefined;
+      }
+    | {
+          type: 'break-keyword';
+          checkpointName: string | undefined;
+      }
+    | {
+          type: 'if-block';
+          condition: Unit;
+          content: Node[];
+      }
+    | {
+          type: 'elif-head';
+          condition: Unit;
+          content: Node[];
+      }
+    | {
+          type: 'else';
+          content: Node[];
+      }
+    | {
+          type: 'item-loop';
+          referencedItem: Unit;
+          iteratorName: string;
+          content: Node[];
+      }
+    | {
+          type: 'conditional-loop';
+          condition: Unit;
+          content: Node[];
+      }
+    | {
+          type: 'switch';
+          referencedItem: Unit;
+          content: Extract<Unit, { type: 'case' }>[];
+      }
+    | {
+          type: 'case';
+          cases: Unit[] | undefined;
+          content: Unit[];
+      }
+    | {
+          type: 'struct';
+          structName: string;
+          properties: [string, string][];
+          nestedStructs: Extract<Unit, { type: 'struct' }>[];
+      }
+    | {
+          type: 'type-definition';
+          typeName: string;
+          types: [string, string][];
+      };
+
 export interface Sentence {
     rawTextCharacters: string[];
     /** Determined by ending symbol (. or :). */
@@ -142,6 +349,20 @@ export type Unit =
           value: number;
       }
     | {
+          type: 'array-start';
+      }
+    | {
+          type: 'object-start';
+      }
+    | {
+          type: 'normal-string';
+          content: string;
+      }
+    | {
+          type: 'safe-string';
+          content: string;
+      }
+    | {
           type: 'reference';
           referencedItem: string;
       }
@@ -161,20 +382,6 @@ export type Unit =
     | {
           type: 'accessor-method-call-name';
           name: string;
-      }
-    | {
-          type: 'array-start';
-      }
-    | {
-          type: 'object-start';
-      }
-    | {
-          type: 'normal-string';
-          content: string;
-      }
-    | {
-          type: 'safe-string';
-          content: string;
       }
     | {
           type: 'two-word-cluster';

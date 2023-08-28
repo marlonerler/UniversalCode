@@ -1,2 +1,7 @@
-# this is a comment
-@ this is a compiler flag
+struct Class:
+    int grade;
+
+    struct students:
+        int count;
+    end struct;
+end struct;
