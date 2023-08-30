@@ -149,13 +149,6 @@ function processClosingMultiwordUnit(
             };
             break;
         }
-        case 'language': {
-            currentUnit = {
-                type: 'language-definition',
-                targetLanguage: currentSentenceBody,
-            };
-            break;
-        }
         case 'module': {
             currentUnit = {
                 type: 'module-name-definition',

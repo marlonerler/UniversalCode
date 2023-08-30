@@ -1,7 +1,0 @@
-struct Class:
-    int grade;
-
-    struct students:
-        int count;
-    end struct;
-end struct;

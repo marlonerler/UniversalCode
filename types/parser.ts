@@ -158,10 +158,6 @@ export type Node =
           sectionName: string;
       }
     | {
-          type: 'language-definition';
-          targetLanguage: string;
-      }
-    | {
           type: 'assignment';
           referencedItem: string;
           assignedValue: Node;
@@ -407,10 +403,6 @@ export type Unit =
     | {
           type: 'section-marker';
           sectionName: string;
-      }
-    | {
-          type: 'language-definition';
-          targetLanguage: string;
       }
     | {
           type: 'assignment-key';
